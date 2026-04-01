@@ -1,0 +1,98 @@
+import type { LocalCommandCall } from '../../types/command.js'
+import { getDoctorDiagnostic } from '../../utils/doctorDiagnostic.js'
+import {
+  buildInstallationDiagnostics,
+  buildInstallationHealthDiagnostics,
+  buildMemoryDiagnostics,
+} from '../../utils/status.js'
+import { errorMessage } from '../../utils/errors.js'
+
+async function collectExtraDiagnostics(): Promise<string[]> {
+  try {
+    return [
+      ...(await buildInstallationDiagnostics()),
+      ...(await buildInstallationHealthDiagnostics()),
+      ...(await buildMemoryDiagnostics()),
+    ].map((item) => (typeof item === 'string' ? item : '[interactive diagnostic]'))
+  } catch (error) {
+    return [`diagnostics unavailable: ${errorMessage(error)}`]
+  }
+}
+
+export const call: LocalCommandCall = async () => {
+  try {
+    const diagnostic = await getDoctorDiagnostic()
+    const extraDiagnostics = await collectExtraDiagnostics()
+
+    const lines = [
+      'Doctor summary:',
+      `Version: ${diagnostic.version}`,
+      `Installation type: ${diagnostic.installationType}`,
+      `Installation path: ${diagnostic.installationPath}`,
+      `Invoked binary: ${diagnostic.invokedBinary}`,
+      `Configured install method: ${diagnostic.configInstallMethod}`,
+      `Auto-updates: ${diagnostic.autoUpdates}`,
+    ]
+
+    if (diagnostic.packageManager) {
+      lines.push(`Package manager: ${diagnostic.packageManager}`)
+    }
+
+    if (diagnostic.hasUpdatePermissions !== null) {
+      lines.push(
+        `Update permissions: ${diagnostic.hasUpdatePermissions ? 'ok' : 'missing'}`,
+      )
+    }
+
+    lines.push(
+      `ripgrep: ${diagnostic.ripgrepStatus.working ? 'ok' : 'not working'} (${diagnostic.ripgrepStatus.mode})`,
+    )
+
+    if (diagnostic.ripgrepStatus.systemPath) {
+      lines.push(`ripgrep path: ${diagnostic.ripgrepStatus.systemPath}`)
+    }
+
+    if (diagnostic.multipleInstallations.length > 0) {
+      lines.push('', 'Other installations:')
+      for (const install of diagnostic.multipleInstallations) {
+        lines.push(`- ${install.type}: ${install.path}`)
+      }
+    }
+
+    if (diagnostic.warnings.length > 0) {
+      lines.push('', 'Warnings:')
+      for (const warning of diagnostic.warnings) {
+        lines.push(`- ${warning.issue}`)
+        lines.push(`  Fix: ${warning.fix}`)
+      }
+    }
+
+    if (extraDiagnostics.length > 0) {
+      lines.push('', 'Additional diagnostics:')
+      for (const item of extraDiagnostics) {
+        lines.push(`- ${item}`)
+      }
+    }
+
+    if (diagnostic.recommendation) {
+      lines.push('', `Recommendation: ${diagnostic.recommendation}`)
+    }
+
+    lines.push('', 'Run `recode doctor` for the full interactive diagnostic view.')
+
+    return {
+      type: 'text',
+      value: lines.join('\n'),
+    }
+  } catch (error) {
+    return {
+      type: 'text',
+      value: [
+        'Doctor summary:',
+        `diagnostics unavailable: ${errorMessage(error)}`,
+        '',
+        'Run `recode doctor` for the full interactive diagnostic view.',
+      ].join('\n'),
+    }
+  }
+}

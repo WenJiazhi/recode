@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "providerType": "cpa",
+  "baseURL": "https://cpa.cpapi.app",
+  "apiKeyFile": "./api-key.txt",
+  "settings": {
+    "model": "opus[1m]",
+    "effortLevel": "high",
+    "customModelAliasMappings": {
+      "opus": {
+        "model": "gpt-5.4",
+        "thinking": "high"
+      },
+      "sonnet": {
+        "model": "gpt-5.4",
+        "thinking": "medium"
+      },
+      "haiku": {
+        "model": "gpt-5.4-mini",
+        "thinking": "minimal"
+      }
+    }
+  }
+}
