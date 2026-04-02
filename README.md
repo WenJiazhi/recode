@@ -1,77 +1,79 @@
 # recode
 
 [![English](https://img.shields.io/badge/README-English-0ea5e9?style=for-the-badge)](./README.md)
-[![简体中文](https://img.shields.io/badge/README-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-38bdf8?style=for-the-badge)](./README.zh-CN.md)
+[![Simplified Chinese](https://img.shields.io/badge/README-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-38bdf8?style=for-the-badge)](./README.zh-CN.md)
 
 ## Bun + TypeScript Terminal Coding Assistant
 
-`recode` is my own terminal coding assistant project.
-
-This repository is a working Bun + TypeScript CLI that I am actively repairing, verifying, packaging, and extending. The goal is not to ship a vague demo. The goal is to keep the useful runtime structure, fix what is broken, and turn it into a tool that can actually be used day to day.
+`recode` is a Bun + TypeScript terminal coding assistant project maintained as its own repository and product line. The current goal is straightforward: keep the useful CLI/runtime structure, repair the broken programming paths, and turn the rebuilt codebase into something that is actually usable for day-to-day coding.
 
 Current version: `0.0.1`
 
 ## Project Snapshot
 
 | Item | Value |
-|---|---|
+| --- | --- |
 | Version | `0.0.1` |
 | Runtime | Bun |
 | Language | TypeScript |
-| Source files (`.ts` / `.tsx`) | `2781` |
+| Source files (`.ts` / `.tsx`) | `2783` |
 | Command modules (`src/commands/*`) | `94` |
 | Tool modules (`src/tools/*`) | `55` |
 | Workspace packages | `6` |
-| Verified CLI/headless commands | `13` |
-| Test files | `7` |
-| Docs files (`docs/*.md` / `docs/*.mdx`) | `30` |
+| Docs files (`docs/*.md` / `docs/*.mdx`) | `33` |
+| Current local test result | `55 pass / 0 fail` |
 
-## What It Is
+## Rebuild Board
 
-- a Bun + TypeScript terminal coding assistant
-- a real repository that I continue to maintain and improve
-- a project that values runtime behavior and usability over mockups
+This is the mainline status board for the current repository. It is ordered around real coding value, not around cosmetic parity.
 
-## Current Status
+| Track | Status | Already Done | Not Done Yet | Next Step |
+| --- | --- | --- | --- | --- |
+| CLI startup and entrypoints | Ready | `recode --help`, `recode --version`, source-entry launcher, build pipeline | bundled `dist/cli.js` is still not the preferred long-session entry | keep `src/entrypoints/cli.tsx` as the stable daily launcher |
+| Headless prompt and slash commands | Ready | `/help`, `/status`, `/doctor`, `/files`, `/diff`, `/tasks`, `/review`, `/commit`, `/model-map` | broader audit still incomplete across the full command tree | keep expanding high-value command coverage in priority order |
+| Interactive REPL | Usable | main REPL starts and the core command surface is available | full UI fidelity is still below the original interactive experience | continue source-faithful UI repairs after coding-critical paths |
+| Review and commit workflow | Partial | `/review` and `/commit` are verified, built-in registration restored | `/commit-push-pr` is still interactive-only until the full GitHub path is verified | validate the end-to-end push/PR path without weakening safety |
+| LSP and code intelligence | Partial | LSP tool is registered and manager initialization path is alive | runtime still discovers `0` LSP servers in the current environment | wire at least one real server config and verify a real request/response flow |
+| Branch/worktree/git workflow | Partial | branch/worktree command paths are present and base git flows exist | interactive worktree parity still needs direct verification | verify one real branch path and one real worktree path |
+| MCP / plugins / agents | Partial | high-value list/help/management paths are working | deeper lifecycle compatibility still needs audit | keep validating the most-used plugin and MCP flows |
+| Provider routing and config | Ready | project-local provider config, local API key file, CPA routing, custom `/v1/models`, alias mappings | lower-traffic provider edge cases still exist | continue keeping custom-provider behavior isolated from Anthropic-only paths |
+| Remote / bridge / voice / workflows | Gated | source tree is present | these are not active daily-use priorities yet | leave gated until the local coding loop is stable |
 
-| Area | Status | Notes |
-|---|---|---|
-| CLI startup | Ready | `recode --help` and `recode --version` verified |
-| Headless prompt mode | Ready | `recode -p "<prompt>"` verified |
-| Headless slash commands | Ready | `/help`, `/status`, `/doctor`, `/model-map` verified |
-| Interactive REPL | Usable | recommended daily entry is `.\recode.cmd` |
-| Model alias mapping | Ready | `/model-map` supports Opus / Sonnet / Haiku mapping |
-| Context cap persistence | Ready | `/model-map context 258k` verified |
-| Local provider config | Ready | project-local `.recode/local-provider.json` path works |
-| CPA-style provider routing | Ready | suffix passthrough such as `gpt-5.4(high)` works |
-| MCP / plugins / agents commands | Ready | high-value management paths verified |
-| Bundled `dist/cli.js` | Partial | build output works for verification, not the preferred long-session entry |
+## CPA Support Matrix
 
-## What Works Now
+This is the most important `recode`-specific enhancement area right now.
 
-- `recode --help`
-- `recode --version`
-- `recode -p "<prompt>"`
-- `recode -p "/help"`
-- `recode -p "/status"`
-- `recode -p "/doctor"`
-- `recode -p "/model-map help"`
-- `recode -p "/model-map status"`
-- `recode auth status`
-- `recode agents`
-- `recode mcp --help`
-- `recode mcp list`
-- `recode plugin list`
+| Capability | Status | Notes |
+| --- | --- | --- |
+| Project-local provider config | Ready | `.recode/local-provider.json` is the primary local config path |
+| Local API key file | Ready | `.recode/api-key.txt` is supported and stays outside git |
+| Provider type routing | Ready | `providerType` + `baseURL` decide the active provider path |
+| CPA base URL | Ready | current project-local flow supports `https://cpa.cpapi.app` |
+| Custom `/v1/models` discovery | Ready | custom-host model discovery and cache are active |
+| Alias mapping | Ready | `/model-map` configures `Opus`, `Sonnet`, and `Haiku` separately |
+| Thinking suffix passthrough | Ready | CPA-style names such as `gpt-5.4(high)` are preserved |
+| Context cap persistence | Ready | `/model-map context 258k` stores `258000` tokens |
+| Portable config carry-over | Ready | portable runtime can carry the local `.recode` folder |
 
-Interactive paths already worth trying:
+## Verified Right Now
 
-- `/model`
-- `/model-map`
-- `/status`
-- `/doctor`
-- `/mcp`
-- `/plugin`
-- `/tasks`
+| Area | Verified Commands / Paths |
+| --- | --- |
+| CLI | `recode --help`, `recode --version`, `recode -p "<prompt>"` |
+| Headless built-ins | `recode -p "/help"`, `recode -p "/status"`, `recode -p "/doctor"`, `recode -p "/files"`, `recode -p "/diff"`, `recode -p "/tasks"`, `recode -p "/review"`, `recode -p "/commit"` |
+| Headless fallback messaging | `recode -p "/config"`, `recode -p "/model"`, `recode -p "/commit-push-pr"` |
+| Model mapping | `recode -p "/model-map help"`, `recode -p "/model-map status"`, `recode -p "/model-map context 258k"` |
+| Management surfaces | `recode auth status`, `recode agents`, `recode mcp --help`, `recode mcp list`, `recode plugin list` |
+
+## Current Sprint Order
+
+| Priority | Item | Why It Is Next |
+| --- | --- | --- |
+| P1 | LSP end-to-end usability | code intelligence is one of the biggest daily coding multipliers still missing |
+| P2 | branch/worktree parity | safe git isolation and branch workflows are part of the core coding loop |
+| P3 | context inspection parity | `/context` is important for understanding prompt pressure, tools, and memory |
+| P4 | remaining headless routing gaps | source presence is not enough; command behavior must be predictable |
+| P5 | permissions/tool gating recheck | tool availability must stay stable while the rebuild continues |
 
 ## Quick Start
 
@@ -112,72 +114,29 @@ bun ./dist/cli.js
 Recommended usage:
 
 - use `.\recode.cmd` for normal local sessions
-- keep `bun ./dist/cli.js` mainly for build verification
+- treat `bun ./dist/cli.js` as a build verification path, not the preferred long-session launcher
 
-## Portable Config
+## Repository Docs
 
-`recode` supports project-local provider configuration through:
-
-- `.recode/local-provider.json`
-- `.recode/local-provider.example.json`
-- `.recode/api-key.txt`
-
-This local config can carry:
-
-- custom API host
-- API key file path
-- default model
-- default effort level
-- `Opus` / `Sonnet` / `Haiku` mappings for `/model-map`
-- context cap overrides such as `258000`
-
-Example:
-
-```json
-{
-  "enabled": true,
-  "providerType": "cpa",
-  "baseURL": "https://cpa.cpapi.app",
-  "apiKeyFile": "./api-key.txt",
-  "settings": {
-    "model": "opus[1m]",
-    "effortLevel": "high",
-    "env": {
-      "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "258000"
-    },
-    "customModelAliasMappings": {
-      "opus": { "model": "gpt-5.4", "thinking": "high" },
-      "sonnet": { "model": "gpt-5.4", "thinking": "medium" },
-      "haiku": { "model": "gpt-5.4-mini", "thinking": "minimal" }
-    }
-  }
-}
-```
-
-## Repository Notes
-
-Main directories:
-
-- `src/` application source
-- `packages/` workspace packages
-- `docs/` status, audit, and parity notes
-- `.recode/` local provider config examples
-
-Status documents:
-
-- [Source parity checklist](./docs/SOURCE_PARITY_CHECKLIST.md)
-- [Current status](./docs/STATUS.md)
-- [Command and tool audit](./docs/COMMAND_TOOL_AUDIT.md)
-- [Worklog](./docs/WORKLOG.md)
+| Document | Purpose |
+| --- | --- |
+| [docs/SOURCE_PARITY_CHECKLIST.md](./docs/SOURCE_PARITY_CHECKLIST.md) | module-by-module parity tracking against the source tree |
+| [docs/STATUS.md](./docs/STATUS.md) | current verification snapshot and usable paths |
+| [docs/COMMAND_TOOL_AUDIT.md](./docs/COMMAND_TOOL_AUDIT.md) | verified command and tool coverage |
+| [docs/PRIORITY_REBUILD_BACKLOG.md](./docs/PRIORITY_REBUILD_BACKLOG.md) | high-value rebuild order from top to bottom |
+| [docs/WORKLOG.md](./docs/WORKLOG.md) | implementation log of completed repair work |
+| `docs/archive/` | older migration notes kept out of the repository root |
 
 ## Acknowledgements
 
-- The current repository is maintained independently as `recode`.
-- Its Bun + TypeScript engineering baseline was bootstrapped from prior open reverse-engineering and restoration work around the Claude Code CLI, including the `claude-code-best/claude-code` project.
-- The current repository structure, packaging, configuration flow, and follow-up development are maintained here as part of the `recode` project.
+| Item | Notes |
+| --- | --- |
+| Current maintenance | this repository is maintained independently as `recode` |
+| Engineering baseline | the Bun + TypeScript baseline was bootstrapped from earlier open reverse-engineering and restoration work around the Claude Code CLI, including `claude-code-best/claude-code` |
+| Current ownership | the directory structure, packaging, CPA support work, config flow, and ongoing rebuild direction are maintained in this repository |
 
 ## Notes
 
-- This is my own repository and my own ongoing development work.
-- It continues from earlier source recovery and engineering work around a similar CLI codebase.
-- It is not an official Anthropic repository.
+- This is not an official Anthropic repository.
+- The repository is focused on a programming-first rebuild, not on claiming complete parity before verification.
+- The homepage tables are meant to stay honest: what is done, what is not done, and what is next.

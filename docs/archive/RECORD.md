@@ -1,4 +1,4 @@
-# Claude Code 项目运行记录
+﻿# Claude Code 项目运行记录
 
 > 项目: `/Users/konghayao/code/ai/claude-code`
 > 日期: 2026-03-31
