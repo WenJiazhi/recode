@@ -55,6 +55,7 @@ export const call: LocalCommandCall = async () => {
     lines.push(
       `LSP config path: ${diagnostic.lspStatus.localConfigPath}`,
       `LSP local config: ${diagnostic.lspStatus.localConfigPresent ? 'present' : 'missing'}`,
+      `LSP example config: ${diagnostic.lspStatus.localExamplePresent ? diagnostic.lspStatus.localExamplePath : 'missing'}`,
       `LSP configured servers: ${diagnostic.lspStatus.configuredServers} (${diagnostic.lspStatus.localConfiguredServers} local, ${diagnostic.lspStatus.pluginConfiguredServers} plugin)`,
       `LSP manager status: ${diagnostic.lspStatus.initializationStatus}`,
       `LSP instantiated servers: ${diagnostic.lspStatus.managerServers} (${diagnostic.lspStatus.activeServers} active, ${diagnostic.lspStatus.errorServers} error)`,
@@ -62,6 +63,9 @@ export const call: LocalCommandCall = async () => {
 
     if (diagnostic.lspStatus.initializationError) {
       lines.push(`LSP initialization error: ${diagnostic.lspStatus.initializationError}`)
+    }
+    if (diagnostic.lspStatus.quickstartHint) {
+      lines.push(`LSP quickstart: ${diagnostic.lspStatus.quickstartHint}`)
     }
 
     lines.push(

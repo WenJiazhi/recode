@@ -36,7 +36,10 @@ import {
   getInitializationStatus as getLspInitializationStatus,
   getLspServerManager,
 } from '../services/lsp/manager.js'
-import { LOCAL_LSP_CONFIG_RELATIVE_PATH } from '../services/lsp/localConfig.js'
+import {
+  LOCAL_LSP_CONFIG_RELATIVE_PATH,
+  LOCAL_LSP_EXAMPLE_CONFIG_RELATIVE_PATH,
+} from '../services/lsp/localConfig.js'
 import { SandboxManager } from './sandbox/sandbox-adapter.js'
 import { getManagedFilePath } from './settings/managedPath.js'
 import { CUSTOMIZATION_SURFACES } from './settings/types.js'
@@ -78,6 +81,8 @@ export type DiagnosticInfo = {
   lspStatus: {
     localConfigPath: string
     localConfigPresent: boolean
+    localExamplePath: string
+    localExamplePresent: boolean
     configuredServers: number
     localConfiguredServers: number
     pluginConfiguredServers: number
@@ -86,6 +91,7 @@ export type DiagnosticInfo = {
     managerServers: number
     activeServers: number
     errorServers: number
+    quickstartHint?: string
   }
   worktreeStatus: {
     modeEnabled: boolean
@@ -99,6 +105,7 @@ export type DiagnosticInfo = {
 
 async function getLspDiagnosticSummary(): Promise<DiagnosticInfo['lspStatus']> {
   const localConfigPath = join(getCwd(), LOCAL_LSP_CONFIG_RELATIVE_PATH)
+  const localExamplePath = join(getCwd(), LOCAL_LSP_EXAMPLE_CONFIG_RELATIVE_PATH)
 
   let localConfigPresent = false
   try {
@@ -106,6 +113,14 @@ async function getLspDiagnosticSummary(): Promise<DiagnosticInfo['lspStatus']> {
     localConfigPresent = true
   } catch {
     localConfigPresent = false
+  }
+
+  let localExamplePresent = false
+  try {
+    await readFile(localExamplePath, 'utf-8')
+    localExamplePresent = true
+  } catch {
+    localExamplePresent = false
   }
 
   let configuredServers = 0
@@ -138,10 +153,16 @@ async function getLspDiagnosticSummary(): Promise<DiagnosticInfo['lspStatus']> {
   const errorServers = managerServerList.filter(
     server => server.state === 'error',
   ).length
+  const quickstartHint =
+    configuredServers === 0 && localExamplePresent
+      ? `Copy ${localExamplePath} to ${localConfigPath} and adjust the server command for your machine.`
+      : undefined
 
   return {
     localConfigPath,
     localConfigPresent,
+    localExamplePath,
+    localExamplePresent,
     configuredServers,
     localConfiguredServers,
     pluginConfiguredServers,
@@ -150,6 +171,7 @@ async function getLspDiagnosticSummary(): Promise<DiagnosticInfo['lspStatus']> {
     managerServers: managerServerList.length,
     activeServers,
     errorServers,
+    quickstartHint,
   }
 }
 

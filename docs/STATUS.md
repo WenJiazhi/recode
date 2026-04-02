@@ -11,10 +11,14 @@ Current version: `0.0.1`
 - `recode -p "/help"`: `completed`
 - `recode -p "/status"`: `completed`
 - `recode -p "/doctor"`: `completed`
+- `recode -p "/branch"` headless fallback message: `completed`
 - `recode -p "/files"`: `completed`
 - `recode -p "/diff"`: `completed`
 - `recode -p "/tasks"`: `completed`
+- `recode -p "/context"`: `completed`
 - `recode -p "/commit"` no longer renders as a visually blank line when the result body is empty: `completed`
+- `recode -p "/review"` headless fallback message: `completed`
+- `recode -p "/commit-push-pr"` headless fallback message: `completed`
 - `recode -p "/config"` headless fallback message: `completed`
 - `recode -p "/model"` headless fallback message: `completed`
 - `recode -p "/model-map help"`: `completed`
@@ -32,17 +36,23 @@ Current version: `0.0.1`
 - project-local `.recode/lsp.json` can initialize and serve one real LSP request when a valid server is available: `completed`
 - `/doctor` and `/status` now surface live LSP config and manager health: `completed`
 - direct LSP tool failures now point to `.recode/lsp.json` and `/doctor`: `completed`
+- direct LSP no-server failures now append matching plugin-install recommendations when a suitable local binary is already installed: `completed`
 - git worktree create / cleanup / dirty-change detection are covered by automated tests: `completed`
+- `/context` no longer double-counts duplicate skill rows in the rendered skills table: `completed`
+- `bun run lint`: `completed`
 
 ## Usable Right Now
 
 - CLI startup
 - base REPL
 - high-value headless slash commands
+- `/context` in headless mode
 - `/files` in headless mode
 - `/diff` in headless mode
 - `/tasks` in headless mode
 - accurate non-interactive fallback messages for interactive-only commands such as `/config` and `/model`
+- accurate non-interactive fallback messages for interactive-only branching commands such as `/branch`
+- accurate non-interactive fallback messages for interactive-only publishing commands such as `/review` and `/commit-push-pr`
 - basic MCP, plugin, and agents command paths
 - custom `/v1/models` model discovery
 - `/model-map` alias mapping
@@ -59,9 +69,11 @@ Current version: `0.0.1`
 - verified real LSP request/response flow when a working local server is available
 - live LSP config/manager health reporting in headless `/doctor` and `/status`
 - clearer direct LSP failure guidance when no server is configured or the manager is unavailable
+- plugin-aware LSP no-server guidance when a matching plugin can be enabled on the current machine
 - built-in `/commit`
 - built-in `/commit-push-pr`
 - automated git worktree create / cleanup / dirty-change coverage
+- deduplicated skill rows in `/context` output
 - `recode --resume` and resume hints
 - source-entrypoint launcher for stable long-running local sessions
 - portable runtime under `E:\appdev\recode-portable`
@@ -77,3 +89,4 @@ Current version: `0.0.1`
 - more advanced feature-flagged runtime paths
 - Bun bundled `dist/cli.js` can still crash on very long interactive sessions, so it is currently treated as a verification path instead of the recommended daily-use launcher
 - `E:\recode-portable` still exists outside the repository root because another process is currently holding the directory open; the canonical local portable copy now lives at `E:\appdev\recode-portable`
+- lint warnings still exist across lower-value files, but the blocking lint error set has been cleared and CI no longer fails on `bun run lint`

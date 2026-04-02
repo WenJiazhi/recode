@@ -194,6 +194,9 @@ export async function buildInstallationHealthDiagnostics(): Promise<Diagnostic[]
   });
   const lspSummary = `LSP: ${diagnostic.lspStatus.configuredServers} configured (${diagnostic.lspStatus.localConfiguredServers} local, ${diagnostic.lspStatus.pluginConfiguredServers} plugin), manager ${diagnostic.lspStatus.initializationStatus}, ${diagnostic.lspStatus.managerServers} instantiated`;
   items.push(lspSummary);
+  if (diagnostic.lspStatus.quickstartHint) {
+    items.push(`LSP quickstart: ${diagnostic.lspStatus.quickstartHint}`);
+  }
   if (diagnostic.lspStatus.initializationError) {
     items.push(`LSP initialization error: ${diagnostic.lspStatus.initializationError}`);
   }

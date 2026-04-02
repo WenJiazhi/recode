@@ -10,6 +10,7 @@ import { jsonParse } from '../../utils/slowOperations.js'
 import { LspServerConfigSchema } from '../../utils/plugins/schemas.js'
 
 export const LOCAL_LSP_CONFIG_RELATIVE_PATH = '.recode/lsp.json'
+export const LOCAL_LSP_EXAMPLE_CONFIG_RELATIVE_PATH = '.recode/lsp.example.json'
 
 function addLocalScopeToLspServers(
   servers: Record<string, z.infer<ReturnType<typeof LspServerConfigSchema>>>,

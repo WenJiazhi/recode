@@ -173,6 +173,24 @@ interface SkillFrontmatter {
   tokens: number
 }
 
+export function deduplicateSkillFrontmatter(
+  skills: SkillFrontmatter[],
+): SkillFrontmatter[] {
+  const deduplicated: SkillFrontmatter[] = []
+  const seen = new Set<string>()
+
+  for (const skill of skills) {
+    const key = `${skill.source}:${skill.name}`
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    deduplicated.push(skill)
+  }
+
+  return deduplicated
+}
+
 /**
  * Information about skills included in the context window.
  */
@@ -587,13 +605,15 @@ async function countSkillTokens(
 
     // Calculate per-skill token estimates based on frontmatter only
     // (name, description, whenToUse) since full content is only loaded on invocation
-    const skillFrontmatter: SkillFrontmatter[] = skills.map(skill => ({
-      name: getCommandName(skill),
-      source: (skill.type === 'prompt' ? skill.source : 'plugin') as
-        | SettingSource
-        | 'plugin',
-      tokens: estimateSkillFrontmatterTokens(skill),
-    }))
+    const skillFrontmatter = deduplicateSkillFrontmatter(
+      skills.map(skill => ({
+        name: getCommandName(skill),
+        source: (skill.type === 'prompt' ? skill.source : 'plugin') as
+          | SettingSource
+          | 'plugin',
+        tokens: estimateSkillFrontmatterTokens(skill),
+      })),
+    )
 
     return {
       skillTokens,

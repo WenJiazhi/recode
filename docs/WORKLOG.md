@@ -90,6 +90,49 @@ Verification:
 - `bun test`
 - `bun run build`
 
+### LSP recommendation plumbing
+
+- kept the existing manager and plugin architecture unchanged
+- reused the existing `src/utils/plugins/lspRecommendation.ts` path inside `LSPTool` when no server matches a file
+- direct no-server failures can now append matching plugin suggestions if the right LSP binary is already installed on the machine
+- kept the project-local `.recode/lsp.json` guidance and `.recode/lsp.example.json` quickstart intact; plugin recommendations are additive, not a replacement
+- manager-unavailable messages now also point to the checked-in `.recode/lsp.example.json` quickstart
+
+Verification:
+
+- `bun test src/tools/LSPTool/__tests__/messages.test.ts`
+- `bun ./src/entrypoints/cli.tsx -p "/doctor"`
+- `bun ./src/entrypoints/cli.tsx -p "/status"`
+- `bun test`
+- `bun run lint`
+- `bun run build`
+
+### Context table cleanup
+
+- verified headless `/context` output against the current workspace
+- found duplicate skill rows in the rendered skills table
+- fixed the duplication in `src/utils/analyzeContext.ts` by deduplicating display rows on `(source, name)` without changing actual skill loading or execution
+- added `src/utils/__tests__/analyzeContext.test.ts`
+
+Verification:
+
+- `bun ./src/entrypoints/cli.tsx -p "/context"`
+- `bun test src/utils/__tests__/analyzeContext.test.ts src/utils/__tests__/context.test.ts`
+- `bun test`
+- `bun run build`
+
+### Branch command routing parity
+
+- added an explicit non-interactive sibling for `/branch`
+- command ordering now guarantees the headless fallback is selected before the interactive JSX command
+- this keeps `/branch` aligned with `/review` and `/commit-push-pr`: interactive-only in behavior, but precise in non-interactive failure mode
+
+Verification:
+
+- `bun ./src/entrypoints/cli.tsx -p "/branch"`
+- `bun test`
+- `bun run build`
+
 ### Headless prompt output hardening
 
 - found that `/commit` could finish with an empty final text body in headless mode, which rendered as a visually blank CLI result
@@ -118,6 +161,24 @@ Verification:
 ### Provider bootstrap alignment
 
 - moved project-local provider loading forward into `src/entrypoints/cli.tsx` so `.recode/local-provider.json` is applied before the main startup flow
+
+### CI and headless command stabilization
+
+- cleared the blocking `bun run lint` error set so CI no longer fails every time a commit is pushed
+- fixed remaining lint blockers without changing runtime behavior:
+  - removed dead `biome-ignore` suppressions that had become errors
+  - replaced NaN self-comparisons with `Number.isNaN(...)`
+  - rewrote async Promise executors into source-faithful async wrappers
+- added explicit non-interactive fallback messaging for `/review`
+- fixed `/commit-push-pr` command ordering so the non-interactive fallback is actually selected in headless mode
+
+Verification:
+
+- `bun run lint`
+- `bun test`
+- `bun run build`
+- `bun ./src/entrypoints/cli.tsx -p "/review"`
+- `bun ./src/entrypoints/cli.tsx -p "/commit-push-pr"`
 - limited Anthropic-only background prefetches in `src/main.tsx` to first-party Anthropic base URLs
 - limited headless GrowthBook initialization in `src/cli/print.ts` to first-party Anthropic base URLs
 - kept the narrower `initializeGrowthBook()` ant-only branch in `main.tsx` unchanged because it is already scoped to the ant build path

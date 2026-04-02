@@ -30,6 +30,7 @@ import { lazySchema } from '../../utils/lazySchema.js'
 import { logError } from '../../utils/log.js'
 import { expandPath } from '../../utils/path.js'
 import { checkReadPermissionForTool } from '../../utils/permissions/filesystem.js'
+import { getMatchingLspPlugins } from '../../utils/plugins/lspRecommendation.js'
 import type { PermissionDecision } from '../../utils/permissions/PermissionResult.js'
 import {
   formatDocumentSymbolResult,
@@ -292,11 +293,22 @@ export const LSPTool = buildTool({
           `No LSP server available for file type ${path.extname(absolutePath)} for operation ${input.operation} on file ${input.filePath}`,
         )
 
+        let matchingPlugins = []
+        try {
+          matchingPlugins = await getMatchingLspPlugins(absolutePath)
+        } catch (error) {
+          logForDebugging(
+            `Failed to load LSP plugin recommendations for ${input.filePath}: ${toError(error).message}`,
+            { level: 'warn' },
+          )
+        }
+
         const output: Output = {
           operation: input.operation,
           result: buildNoLspServerMessage(
             path.extname(absolutePath),
             path.join(getCwd(), '.recode', 'lsp.json'),
+            matchingPlugins,
           ),
           filePath: input.filePath,
         }

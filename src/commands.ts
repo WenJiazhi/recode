@@ -39,7 +39,7 @@ import pr_comments from './commands/pr_comments/index.js'
 import releaseNotes from './commands/release-notes/index.js'
 import rename from './commands/rename/index.js'
 import resume from './commands/resume/index.js'
-import review, { ultrareview } from './commands/review.js'
+import review, { reviewNonInteractive, ultrareview } from './commands/review.js'
 import session from './commands/session/index.js'
 import share from './commands/share/index.js'
 import skills from './commands/skills/index.js'
@@ -132,7 +132,7 @@ import passes from './commands/passes/index.js'
 import privacySettings from './commands/privacy-settings/index.js'
 import hooks from './commands/hooks/index.js'
 import files from './commands/files/index.js'
-import branch from './commands/branch/index.js'
+import branch, { branchNonInteractive } from './commands/branch/index.js'
 import agents from './commands/agents/index.js'
 import plugin from './commands/plugin/index.js'
 import reloadPlugins from './commands/reload-plugins/index.js'
@@ -264,14 +264,15 @@ const COMMANDS = memoize((): Command[] => [
   addDir,
   advisor,
   agents,
+  branchNonInteractive,
   branch,
   btw,
   chrome,
   clear,
   color,
   commit,
-  commitPushPr,
   commitPushPrNonInteractive,
+  commitPushPr,
   compact,
   config,
   copy,
@@ -319,6 +320,7 @@ const COMMANDS = memoize((): Command[] => [
   tag,
   theme,
   feedback,
+  reviewNonInteractive,
   review,
   ultrareview,
   rewind,

@@ -1,5 +1,7 @@
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.js'
+import { getIsNonInteractiveSession } from '../bootstrap/state.js'
 import type { Command } from '../types/command.js'
+import type { LocalCommandCall } from '../types/command.js'
 import { isUltrareviewEnabled } from './review/ultrareviewEnabled.js'
 
 // Legal wants the explicit surface name plus a docs link visible before the
@@ -42,6 +44,24 @@ const review: Command = {
   },
 }
 
+const reviewNonInteractiveCall: LocalCommandCall = async () => ({
+  type: 'text',
+  value:
+    '/review is not available in non-interactive mode. Run it inside the interactive recode session.',
+})
+
+const reviewNonInteractive: Command = {
+  type: 'local',
+  name: 'review',
+  supportsNonInteractive: true,
+  description: 'Review a pull request',
+  isEnabled: () => getIsNonInteractiveSession(),
+  get isHidden() {
+    return !getIsNonInteractiveSession()
+  },
+  load: async () => ({ call: reviewNonInteractiveCall }),
+}
+
 // /ultrareview is the ONLY entry point to the remote bughunter path —
 // /review stays purely local. local-jsx type renders the overage permission
 // dialog when free reviews are exhausted.
@@ -54,4 +74,4 @@ const ultrareview: Command = {
 }
 
 export default review
-export { ultrareview }
+export { reviewNonInteractive, ultrareview }
