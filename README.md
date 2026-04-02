@@ -5,7 +5,7 @@
 
 ## Bun + TypeScript Terminal Coding Assistant
 
-`recode` is a Bun + TypeScript terminal coding assistant project maintained as its own repository and product line. The current goal is straightforward: keep the useful CLI/runtime structure, repair the broken programming paths, and turn the rebuilt codebase into something that is actually usable for day-to-day coding.
+`recode` is a Bun + TypeScript terminal coding assistant project maintained as its own repository and product line. It is best understood as a programming-first Claude Code rebuild and secondary development project: keep the useful CLI/runtime structure, repair the broken programming paths, and turn the rebuilt codebase into something that is actually usable for day-to-day coding.
 
 Current version: `0.0.1`
 

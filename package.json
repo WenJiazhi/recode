@@ -1,7 +1,7 @@
 ﻿{
   "name": "recode",
   "version": "0.0.1",
-  "description": "Bun and TypeScript terminal coding assistant maintained as the recode project",
+  "description": "Bun and TypeScript Claude Code rebuild and terminal coding assistant maintained as the recode project",
   "type": "module",
   "author": "Wen Jiazhi",
   "repository": {
@@ -16,6 +16,8 @@
     "recode",
     "claude-code",
     "claude code",
+    "claude-code-rebuild",
+    "claude-code-cli",
     "bun",
     "typescript",
     "cli",
