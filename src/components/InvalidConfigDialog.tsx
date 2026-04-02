@@ -131,25 +131,40 @@ export async function showInvalidConfigDialog({
     // This allows the error dialog to show even when config file has JSON syntax errors
     theme: SAFE_ERROR_THEME_NAME
   };
-  await new Promise<void>(async resolve => {
-    const {
-      unmount
-    } = await render(<AppStateProvider>
+  await new Promise<void>((resolve, reject) => {
+    let unmount = () => {}
+    void render(
+      <AppStateProvider>
         <KeybindingSetup>
-          <InvalidConfigDialog filePath={error.filePath} errorDescription={error.message} onExit={() => {
-          unmount();
-          void resolve();
-          process.exit(1);
-        }} onReset={() => {
-          writeFileSync_DEPRECATED(error.filePath, jsonStringify(error.defaultConfig, null, 2), {
-            flush: false,
-            encoding: 'utf8'
-          });
-          unmount();
-          void resolve();
-          process.exit(0);
-        }} />
+          <InvalidConfigDialog
+            filePath={error.filePath}
+            errorDescription={error.message}
+            onExit={() => {
+              unmount()
+              resolve()
+              process.exit(1)
+            }}
+            onReset={() => {
+              writeFileSync_DEPRECATED(
+                error.filePath,
+                jsonStringify(error.defaultConfig, null, 2),
+                {
+                  flush: false,
+                  encoding: 'utf8',
+                },
+              )
+              unmount()
+              resolve()
+              process.exit(0)
+            }}
+          />
         </KeybindingSetup>
-      </AppStateProvider>, renderOptions);
-  });
+      </AppStateProvider>,
+      renderOptions,
+    )
+      .then(instance => {
+        unmount = instance.unmount
+      })
+      .catch(reject)
+  })
 }

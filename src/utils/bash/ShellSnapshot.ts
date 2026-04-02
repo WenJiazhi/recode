@@ -421,8 +421,9 @@ export const createAndSaveSnapshot = async (
 
   logForDebugging(`Creating shell snapshot for ${shellType} (${binShell})`)
 
-  return new Promise(async resolve => {
-    try {
+  return new Promise(resolve => {
+    void (async () => {
+      try {
       const configFile = getConfigFile(binShell)
       logForDebugging(`Looking for shell config file: ${configFile}`)
       const configFileExists = await pathExists(configFile)
@@ -569,14 +570,15 @@ export const createAndSaveSnapshot = async (
           }
         },
       )
-    } catch (error) {
-      logForDebugging(`Unexpected error during snapshot creation: ${error}`)
-      if (error instanceof Error) {
-        logForDebugging(`Error stack trace: ${error.stack}`)
+      } catch (error) {
+        logForDebugging(`Unexpected error during snapshot creation: ${error}`)
+        if (error instanceof Error) {
+          logForDebugging(`Error stack trace: ${error.stack}`)
+        }
+        logError(error)
+        logEvent('tengu_shell_snapshot_error', {})
+        resolve(undefined)
       }
-      logError(error)
-      logEvent('tengu_shell_snapshot_error', {})
-      resolve(undefined)
-    }
+    })()
   })
 }

@@ -30,6 +30,10 @@ export function tryFormatJson(line: string): string {
   }
 }
 const MAX_JSON_FORMAT_LENGTH = 10_000;
+const UNDERLINE_ANSI_RE = new RegExp(
+  String.raw`\u001B\[([0-9]+;)*4(;[0-9]+)*m|\u001B\[4(;[0-9]+)*m|\u001B\[([0-9]+;)*4m`,
+  'g',
+)
 export function tryJsonFormatContent(content: string): string {
   if (content.length > MAX_JSON_FORMAT_LENGTH) {
     return content;
@@ -111,7 +115,5 @@ export function OutputLine(t0) {
  * all formatting. So we just strip the underline ANSI codes specifically.
  */
 export function stripUnderlineAnsi(content: string): string {
-  return content.replace(
-  // eslint-disable-next-line no-control-regex
-  /\u001b\[([0-9]+;)*4(;[0-9]+)*m|\u001b\[4(;[0-9]+)*m|\u001b\[([0-9]+;)*4m/g, '');
+  return content.replace(UNDERLINE_ANSI_RE, '');
 }
