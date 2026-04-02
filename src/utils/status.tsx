@@ -197,6 +197,8 @@ export async function buildInstallationHealthDiagnostics(): Promise<Diagnostic[]
   if (diagnostic.lspStatus.initializationError) {
     items.push(`LSP initialization error: ${diagnostic.lspStatus.initializationError}`);
   }
+  const worktreeSummary = diagnostic.worktreeStatus.active ? `Worktree: active (${diagnostic.worktreeStatus.worktreeBranch ?? 'unknown branch'} @ ${diagnostic.worktreeStatus.worktreePath ?? 'unknown path'})` : `Worktree: ${diagnostic.worktreeStatus.modeEnabled ? 'mode enabled, no active session' : 'disabled'}`;
+  items.push(worktreeSummary);
   if (diagnostic.hasUpdatePermissions === false) {
     items.push('No write permissions for auto-updates (requires sudo)');
   }

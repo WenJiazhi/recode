@@ -64,6 +64,24 @@ export const call: LocalCommandCall = async () => {
       lines.push(`LSP initialization error: ${diagnostic.lspStatus.initializationError}`)
     }
 
+    lines.push(
+      `Worktree mode: ${diagnostic.worktreeStatus.modeEnabled ? 'enabled' : 'disabled'}`,
+      `Worktree session: ${diagnostic.worktreeStatus.active ? 'active' : 'inactive'}`,
+    )
+
+    if (diagnostic.worktreeStatus.active) {
+      lines.push(
+        `Worktree path: ${diagnostic.worktreeStatus.worktreePath}`,
+        `Worktree branch: ${diagnostic.worktreeStatus.worktreeBranch ?? 'unknown'}`,
+      )
+      if (diagnostic.worktreeStatus.originalBranch) {
+        lines.push(`Original branch: ${diagnostic.worktreeStatus.originalBranch}`)
+      }
+      if (diagnostic.worktreeStatus.hookBased) {
+        lines.push('Worktree backend: hook-based')
+      }
+    }
+
     if (diagnostic.multipleInstallations.length > 0) {
       lines.push('', 'Other installations:')
       for (const install of diagnostic.multipleInstallations) {

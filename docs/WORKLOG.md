@@ -90,6 +90,31 @@ Verification:
 - `bun test`
 - `bun run build`
 
+### Headless prompt output hardening
+
+- found that `/commit` could finish with an empty final text body in headless mode, which rendered as a visually blank CLI result
+- kept the QueryEngine/SDK result contract unchanged
+- hardened [print.ts](/E:/appdev/claudecode-rebuild/src/cli/print.ts) so human CLI output now prints the existing `(no content)` sentinel instead of a blank line when a prompt command finishes without textual output
+
+Verification:
+
+- `bun ./src/entrypoints/cli.tsx -p "/commit"`
+- `bun test`
+- `bun run build`
+
+### LSP failure-message hardening
+
+- added pure helper functions under [messages.ts](/E:/appdev/claudecode-rebuild/src/tools/LSPTool/messages.ts) for LSP availability errors
+- when the LSP manager is unavailable, the tool now points users to `/doctor` and the local `.recode/lsp.json` path instead of returning a vague startup error
+- when no matching server exists for a file type, the tool now points users to `.recode/lsp.json` or plugin-provided servers instead of only echoing the file extension
+- added unit coverage in [messages.test.ts](/E:/appdev/claudecode-rebuild/src/tools/LSPTool/__tests__/messages.test.ts)
+
+Verification:
+
+- `bun test src/tools/LSPTool/__tests__/messages.test.ts`
+- `bun test`
+- `bun run build`
+
 ### Provider bootstrap alignment
 
 - moved project-local provider loading forward into `src/entrypoints/cli.tsx` so `.recode/local-provider.json` is applied before the main startup flow

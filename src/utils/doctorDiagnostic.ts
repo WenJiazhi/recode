@@ -46,6 +46,8 @@ import {
   getShellConfigPaths,
 } from './shellConfig.js'
 import { jsonParse } from './slowOperations.js'
+import { getCurrentWorktreeSession } from './worktree.js'
+import { isWorktreeModeEnabled } from './worktreeModeEnabled.js'
 import { which } from './which.js'
 
 export type InstallationType =
@@ -84,6 +86,14 @@ export type DiagnosticInfo = {
     managerServers: number
     activeServers: number
     errorServers: number
+  }
+  worktreeStatus: {
+    modeEnabled: boolean
+    active: boolean
+    worktreePath: string | null
+    worktreeBranch: string | null
+    originalBranch: string | null
+    hookBased: boolean
   }
 }
 
@@ -140,6 +150,18 @@ async function getLspDiagnosticSummary(): Promise<DiagnosticInfo['lspStatus']> {
     managerServers: managerServerList.length,
     activeServers,
     errorServers,
+  }
+}
+
+function getWorktreeDiagnosticSummary(): DiagnosticInfo['worktreeStatus'] {
+  const session = getCurrentWorktreeSession()
+  return {
+    modeEnabled: isWorktreeModeEnabled(),
+    active: session !== null,
+    worktreePath: session?.worktreePath ?? null,
+    worktreeBranch: session?.worktreeBranch ?? null,
+    originalBranch: session?.originalBranch ?? null,
+    hookBased: session?.hookBased === true,
   }
 }
 
@@ -709,6 +731,7 @@ export async function getDoctorDiagnostic(): Promise<DiagnosticInfo> {
     packageManager,
     ripgrepStatus,
     lspStatus: await getLspDiagnosticSummary(),
+    worktreeStatus: getWorktreeDiagnosticSummary(),
   }
 
   return diagnostic

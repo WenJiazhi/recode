@@ -41,6 +41,10 @@ import {
   formatPrepareCallHierarchyResult,
   formatWorkspaceSymbolResult,
 } from './formatters.js'
+import {
+  buildLspManagerUnavailableMessage,
+  buildNoLspServerMessage,
+} from './messages.js'
 import { DESCRIPTION, LSP_TOOL_NAME } from './prompt.js'
 import { lspToolInputSchema } from './schemas.js'
 import {
@@ -242,8 +246,10 @@ export const LSPTool = buildTool({
 
       const output: Output = {
         operation: input.operation,
-        result:
-          'LSP server manager not initialized. This may indicate a startup issue.',
+        result: buildLspManagerUnavailableMessage(
+          getInitializationStatus(),
+          path.join(getCwd(), '.recode', 'lsp.json'),
+        ),
         filePath: input.filePath,
       }
       return {
@@ -288,7 +294,10 @@ export const LSPTool = buildTool({
 
         const output: Output = {
           operation: input.operation,
-          result: `No LSP server available for file type: ${path.extname(absolutePath)}`,
+          result: buildNoLspServerMessage(
+            path.extname(absolutePath),
+            path.join(getCwd(), '.recode', 'lsp.json'),
+          ),
           filePath: input.filePath,
         }
         return {

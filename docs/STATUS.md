@@ -14,6 +14,7 @@ Current version: `0.0.1`
 - `recode -p "/files"`: `completed`
 - `recode -p "/diff"`: `completed`
 - `recode -p "/tasks"`: `completed`
+- `recode -p "/commit"` no longer renders as a visually blank line when the result body is empty: `completed`
 - `recode -p "/config"` headless fallback message: `completed`
 - `recode -p "/model"` headless fallback message: `completed`
 - `recode -p "/model-map help"`: `completed`
@@ -30,6 +31,7 @@ Current version: `0.0.1`
 - default `recode` launcher uses `src/entrypoints/cli.tsx` with `dist/cli.js` fallback: `completed`
 - project-local `.recode/lsp.json` can initialize and serve one real LSP request when a valid server is available: `completed`
 - `/doctor` and `/status` now surface live LSP config and manager health: `completed`
+- direct LSP tool failures now point to `.recode/lsp.json` and `/doctor`: `completed`
 - git worktree create / cleanup / dirty-change detection are covered by automated tests: `completed`
 
 ## Usable Right Now
@@ -56,6 +58,7 @@ Current version: `0.0.1`
 - project-local LSP server discovery through `.recode/lsp.json`
 - verified real LSP request/response flow when a working local server is available
 - live LSP config/manager health reporting in headless `/doctor` and `/status`
+- clearer direct LSP failure guidance when no server is configured or the manager is unavailable
 - built-in `/commit`
 - built-in `/commit-push-pr`
 - automated git worktree create / cleanup / dirty-change coverage
