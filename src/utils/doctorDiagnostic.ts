@@ -31,6 +31,12 @@ import {
 } from './nativeInstaller/packageManagers.js'
 import { getPlatform } from './platform.js'
 import { getRipgrepStatus } from './ripgrep.js'
+import { getAllLspServers } from '../services/lsp/config.js'
+import {
+  getInitializationStatus as getLspInitializationStatus,
+  getLspServerManager,
+} from '../services/lsp/manager.js'
+import { LOCAL_LSP_CONFIG_RELATIVE_PATH } from '../services/lsp/localConfig.js'
 import { SandboxManager } from './sandbox/sandbox-adapter.js'
 import { getManagedFilePath } from './settings/managedPath.js'
 import { CUSTOMIZATION_SURFACES } from './settings/types.js'
@@ -66,6 +72,74 @@ export type DiagnosticInfo = {
     working: boolean
     mode: 'system' | 'builtin' | 'embedded'
     systemPath: string | null
+  }
+  lspStatus: {
+    localConfigPath: string
+    localConfigPresent: boolean
+    configuredServers: number
+    localConfiguredServers: number
+    pluginConfiguredServers: number
+    initializationStatus: 'not-started' | 'pending' | 'success' | 'failed'
+    initializationError?: string
+    managerServers: number
+    activeServers: number
+    errorServers: number
+  }
+}
+
+async function getLspDiagnosticSummary(): Promise<DiagnosticInfo['lspStatus']> {
+  const localConfigPath = join(getCwd(), LOCAL_LSP_CONFIG_RELATIVE_PATH)
+
+  let localConfigPresent = false
+  try {
+    await readFile(localConfigPath, 'utf-8')
+    localConfigPresent = true
+  } catch {
+    localConfigPresent = false
+  }
+
+  let configuredServers = 0
+  let localConfiguredServers = 0
+  let pluginConfiguredServers = 0
+  try {
+    const { servers } = await getAllLspServers()
+    configuredServers = Object.keys(servers).length
+    localConfiguredServers = Object.values(servers).filter(
+      server => server.source === 'project-local',
+    ).length
+    pluginConfiguredServers = configuredServers - localConfiguredServers
+  } catch {
+    // Best-effort diagnostics only; keep defaults on discovery failure.
+  }
+
+  const initialization = getLspInitializationStatus()
+  const initializationStatus = initialization.status
+  const initializationError =
+    initialization.status === 'failed'
+      ? initialization.error.message
+      : undefined
+
+  const manager = getLspServerManager()
+  const managerServers = manager?.getAllServers() ?? new Map()
+  const managerServerList = Array.from(managerServers.values())
+  const activeServers = managerServerList.filter(
+    server => server.state !== 'error',
+  ).length
+  const errorServers = managerServerList.filter(
+    server => server.state === 'error',
+  ).length
+
+  return {
+    localConfigPath,
+    localConfigPresent,
+    configuredServers,
+    localConfiguredServers,
+    pluginConfiguredServers,
+    initializationStatus,
+    initializationError,
+    managerServers: managerServerList.length,
+    activeServers,
+    errorServers,
   }
 }
 
@@ -450,14 +524,14 @@ async function detectConfigurationIssues(
     if (type === 'npm-local' && config.installMethod !== 'local') {
       warnings.push({
         issue: `Running from local installation but config install method is '${config.installMethod}'`,
-        fix: 'Consider using native installation: claude install',
+          fix: 'Consider using native installation: recode install',
       })
     }
 
     if (type === 'native' && config.installMethod !== 'native') {
       warnings.push({
         issue: `Running native installation but config install method is '${config.installMethod}'`,
-        fix: 'Run claude install to update configuration',
+          fix: 'Run recode install to update configuration',
       })
     }
   }
@@ -465,7 +539,7 @@ async function detectConfigurationIssues(
   if (type === 'npm-global' && (await localInstallationExists())) {
     warnings.push({
       issue: 'Local installation exists but not being used',
-      fix: 'Consider using native installation: claude install',
+        fix: 'Consider using native installation: recode install',
     })
   }
 
@@ -595,7 +669,7 @@ export async function getDoctorDiagnostic(): Promise<DiagnosticInfo> {
     if (!hasUpdatePermissions && !getAutoUpdaterDisabledReason()) {
       warnings.push({
         issue: 'Insufficient permissions for auto-updates',
-        fix: 'Do one of: (1) Re-install node without sudo, or (2) Use `claude install` for native installation',
+          fix: 'Do one of: (1) Re-install node without sudo, or (2) Use `recode install` for native installation',
       })
     }
   }
@@ -634,6 +708,7 @@ export async function getDoctorDiagnostic(): Promise<DiagnosticInfo> {
     warnings,
     packageManager,
     ripgrepStatus,
+    lspStatus: await getLspDiagnosticSummary(),
   }
 
   return diagnostic

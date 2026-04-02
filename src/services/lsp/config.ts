@@ -5,6 +5,7 @@ import { logError } from '../../utils/log.js'
 import { getPluginLspServers } from '../../utils/plugins/lspPluginIntegration.js'
 import { loadAllPluginsCacheOnly } from '../../utils/plugins/pluginLoader.js'
 import type { ScopedLspServerConfig } from './types.js'
+import { loadLocalLspServers } from './localConfig.js'
 
 /**
  * Get all configured LSP servers from plugins.
@@ -16,6 +17,19 @@ export async function getAllLspServers(): Promise<{
   servers: Record<string, ScopedLspServerConfig>
 }> {
   const allServers: Record<string, ScopedLspServerConfig> = {}
+
+  try {
+    const localServers = await loadLocalLspServers()
+    if (Object.keys(localServers).length > 0) {
+      Object.assign(allServers, localServers)
+      logForDebugging(
+        `Loaded ${Object.keys(localServers).length} local LSP server(s) from project config`,
+      )
+    }
+  } catch (error) {
+    logError(toError(error))
+    logForDebugging(`Error loading local LSP servers: ${errorMessage(error)}`)
+  }
 
   try {
     // Get all enabled plugins

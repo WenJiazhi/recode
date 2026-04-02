@@ -52,6 +52,18 @@ export const call: LocalCommandCall = async () => {
       lines.push(`ripgrep path: ${diagnostic.ripgrepStatus.systemPath}`)
     }
 
+    lines.push(
+      `LSP config path: ${diagnostic.lspStatus.localConfigPath}`,
+      `LSP local config: ${diagnostic.lspStatus.localConfigPresent ? 'present' : 'missing'}`,
+      `LSP configured servers: ${diagnostic.lspStatus.configuredServers} (${diagnostic.lspStatus.localConfiguredServers} local, ${diagnostic.lspStatus.pluginConfiguredServers} plugin)`,
+      `LSP manager status: ${diagnostic.lspStatus.initializationStatus}`,
+      `LSP instantiated servers: ${diagnostic.lspStatus.managerServers} (${diagnostic.lspStatus.activeServers} active, ${diagnostic.lspStatus.errorServers} error)`,
+    )
+
+    if (diagnostic.lspStatus.initializationError) {
+      lines.push(`LSP initialization error: ${diagnostic.lspStatus.initializationError}`)
+    }
+
     if (diagnostic.multipleInstallations.length > 0) {
       lines.push('', 'Other installations:')
       for (const install of diagnostic.multipleInstallations) {

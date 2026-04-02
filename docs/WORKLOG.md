@@ -50,6 +50,46 @@
 
 ## 2026-04-02
 
+### Project-local LSP discovery
+
+- confirmed that the current runtime had `0` discovered LSP servers because no installed plugin actually declared `lspServers` or `.lsp.json`
+- added project-local LSP discovery through `.recode/lsp.json` in `src/services/lsp/localConfig.ts`
+- merged project-local LSP servers ahead of plugin servers without changing the existing manager lifecycle
+- added `src/services/lsp/__tests__/localConfig.test.ts`
+- added `.recode/lsp.example.json`
+- verification:
+  - `bun test src/services/lsp/__tests__/localConfig.test.ts`
+  - `bun run build`
+
+### LSP and worktree verification hardening
+
+- verified a real LSP request/response path against a working local server after adding `.recode/lsp.json` support
+- added `src/utils/__tests__/worktree.test.ts`
+- covered real git worktree create, cleanup, dirty-file detection, and post-commit change detection in automated tests
+- changed the user-visible `/branch` resume hint from `claude -r` to `recode -r`
+- verification:
+- `bun test src/utils/__tests__/worktree.test.ts`
+- `bun test`
+- `bun run build`
+
+### LSP daily-use diagnostics
+
+- added live LSP summary data to `src/utils/doctorDiagnostic.ts`
+- `/doctor` now prints:
+  - local `.recode/lsp.json` presence
+  - configured server counts (local vs plugin)
+  - manager initialization status
+  - instantiated server counts and error counts
+- `/status` now includes a compact LSP health line through `buildInstallationHealthDiagnostics()`
+- kept the existing LSP manager lifecycle unchanged; this was a visibility patch, not a behavioral rewrite
+
+Verification:
+
+- `bun ./src/entrypoints/cli.tsx -p "/doctor"`
+- `bun ./src/entrypoints/cli.tsx -p "/status"`
+- `bun test`
+- `bun run build`
+
 ### Provider bootstrap alignment
 
 - moved project-local provider loading forward into `src/entrypoints/cli.tsx` so `.recode/local-provider.json` is applied before the main startup flow
@@ -59,15 +99,13 @@
 
 ### Portable runtime fixes
 
-- moved the local portable copies under `Portable/` inside the repository so the portable work no longer lives off the repository root
-- kept `Portable/recode-portable` as the canonical portable runtime copy
-- removed the incomplete `Portable/recode-portable-local` directory after it was shown to have partial dependencies and to interfere with validation
+- portable runtime work is no longer kept under the repository root
+- current canonical local portable runtime copy lives at `E:\appdev\recode-portable`
 - fixed portable search-tool failures by teaching `src/utils/ripgrep.ts` to fall back to the SDK vendored ripgrep binary when the local vendor path does not contain a real `rg.exe`
 - verified the portable runtime resolves ripgrep from `node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-win32/rg.exe`
-- verified `Portable/recode-portable/recode.bat -p "/doctor"` now reports `ripgrep: ok (builtin)`
+- verified `E:\appdev\recode-portable\recode.bat -p "/doctor"` now reports `ripgrep: ok (builtin)`
 
 ### Repository hygiene
 
-- marked `Portable/` as a local artifact area in `.gitignore`
 - preserved local-only provider secrets under ignored `.recode` files
-- noted that the old `E:\\recode-portable` directory still exists only because another process is holding it open; the repository copy under `Portable/` is the one that should be used going forward
+- noted that the old `E:\\recode-portable` directory still exists only because another process is holding it open; the canonical local portable copy now lives at `E:\\appdev\\recode-portable`

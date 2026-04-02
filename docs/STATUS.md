@@ -28,6 +28,9 @@ Current version: `0.0.1`
 - `recode --resume <id>` branding output: `completed`
 - `/config` / settings screen no longer crashes with `Gates is not defined`: `completed`
 - default `recode` launcher uses `src/entrypoints/cli.tsx` with `dist/cli.js` fallback: `completed`
+- project-local `.recode/lsp.json` can initialize and serve one real LSP request when a valid server is available: `completed`
+- `/doctor` and `/status` now surface live LSP config and manager health: `completed`
+- git worktree create / cleanup / dirty-change detection are covered by automated tests: `completed`
 
 ## Usable Right Now
 
@@ -50,20 +53,24 @@ Current version: `0.0.1`
 - live CPA chat requests using project-local provider config
 - LSP tool registration in the base tool pool
 - LSP manager initialization path
+- project-local LSP server discovery through `.recode/lsp.json`
+- verified real LSP request/response flow when a working local server is available
+- live LSP config/manager health reporting in headless `/doctor` and `/status`
 - built-in `/commit`
 - built-in `/commit-push-pr`
+- automated git worktree create / cleanup / dirty-change coverage
 - `recode --resume` and resume hints
 - source-entrypoint launcher for stable long-running local sessions
-- portable runtime under `Portable/recode-portable`
+- portable runtime under `E:\appdev\recode-portable`
 - portable CPA config carried in the local `.recode` folder
 - portable built-in ripgrep fallback via SDK vendor assets
 
 ## Still In Progress
 
 - UI fidelity versus the original interactive experience
-- real LSP end-to-end usability still depends on at least one discoverable LSP server config; current runtime initializes the manager successfully but loads `0` servers
+- real LSP end-to-end usability still depends on at least one working server process on the user's machine, but the runtime now supports project-local `.recode/lsp.json` discovery, reports live health in `/doctor` and `/status`, and the request path has been verified against a working local server
 - deeper brand cleanup in lower-traffic flows
 - a small number of nonessential first-party analytics/metrics probes still assume Anthropic endpoints
 - more advanced feature-flagged runtime paths
 - Bun bundled `dist/cli.js` can still crash on very long interactive sessions, so it is currently treated as a verification path instead of the recommended daily-use launcher
-- `E:\recode-portable` still exists outside the repository root because another process is currently holding the directory open; the repository now uses `Portable/recode-portable` as the canonical local portable copy
+- `E:\recode-portable` still exists outside the repository root because another process is currently holding the directory open; the canonical local portable copy now lives at `E:\appdev\recode-portable`

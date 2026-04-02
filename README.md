@@ -16,12 +16,12 @@ Current version: `0.0.1`
 | Version | `0.0.1` |
 | Runtime | Bun |
 | Language | TypeScript |
-| Source files (`.ts` / `.tsx`) | `2783` |
+| Source files (`.ts` / `.tsx`) | `2786` |
 | Command modules (`src/commands/*`) | `94` |
 | Tool modules (`src/tools/*`) | `55` |
 | Workspace packages | `6` |
 | Docs files (`docs/*.md` / `docs/*.mdx`) | `33` |
-| Current local test result | `55 pass / 0 fail` |
+| Current local test result | `59 pass / 0 fail` |
 
 ## Rebuild Board
 
@@ -33,8 +33,8 @@ This is the mainline status board for the current repository. It is ordered arou
 | Headless prompt and slash commands | Ready | `/help`, `/status`, `/doctor`, `/files`, `/diff`, `/tasks`, `/review`, `/commit`, `/model-map` | broader audit still incomplete across the full command tree | keep expanding high-value command coverage in priority order |
 | Interactive REPL | Usable | main REPL starts and the core command surface is available | full UI fidelity is still below the original interactive experience | continue source-faithful UI repairs after coding-critical paths |
 | Review and commit workflow | Partial | `/review` and `/commit` are verified, built-in registration restored | `/commit-push-pr` is still interactive-only until the full GitHub path is verified | validate the end-to-end push/PR path without weakening safety |
-| LSP and code intelligence | Partial | LSP tool is registered and manager initialization path is alive | runtime still discovers `0` LSP servers in the current environment | wire at least one real server config and verify a real request/response flow |
-| Branch/worktree/git workflow | Partial | branch/worktree command paths are present and base git flows exist | interactive worktree parity still needs direct verification | verify one real branch path and one real worktree path |
+| LSP and code intelligence | Partial | LSP tool is registered, project-local `.recode/lsp.json` discovery works, a real request/response path is verified when a server is available, and `/doctor` + `/status` now report live LSP config/manager health | day-to-day setup still depends on the user providing at least one working local or plugin server | turn the verified local-server path into a more obvious daily-use workflow |
+| Branch/worktree/git workflow | Partial | branch/worktree command paths are present, `/branch` fallback is correct in headless mode, and real git worktree create/cleanup/dirty detection is covered by tests | interactive worktree parity still needs more end-to-end validation | keep validating interactive branch/worktree flows without loosening git safety |
 | MCP / plugins / agents | Partial | high-value list/help/management paths are working | deeper lifecycle compatibility still needs audit | keep validating the most-used plugin and MCP flows |
 | Provider routing and config | Ready | project-local provider config, local API key file, CPA routing, custom `/v1/models`, alias mappings | lower-traffic provider edge cases still exist | continue keeping custom-provider behavior isolated from Anthropic-only paths |
 | Remote / bridge / voice / workflows | Gated | source tree is present | these are not active daily-use priorities yet | leave gated until the local coding loop is stable |
@@ -54,6 +54,7 @@ This is the most important `recode`-specific enhancement area right now.
 | Thinking suffix passthrough | Ready | CPA-style names such as `gpt-5.4(high)` are preserved |
 | Context cap persistence | Ready | `/model-map context 258k` stores `258000` tokens |
 | Portable config carry-over | Ready | portable runtime can carry the local `.recode` folder |
+| Project-local LSP config | Ready | `.recode/lsp.json` is now a valid local server discovery path |
 
 ## Verified Right Now
 
@@ -69,8 +70,8 @@ This is the most important `recode`-specific enhancement area right now.
 
 | Priority | Item | Why It Is Next |
 | --- | --- | --- |
-| P1 | LSP end-to-end usability | code intelligence is one of the biggest daily coding multipliers still missing |
-| P2 | branch/worktree parity | safe git isolation and branch workflows are part of the core coding loop |
+| P1 | LSP daily-use polish | the runtime now reports live LSP config and manager health, but the local-server workflow still needs to be easier to discover and trust |
+| P2 | branch/worktree interactive parity | the git safety layer is now tested, so the next step is user-facing interactive confidence |
 | P3 | context inspection parity | `/context` is important for understanding prompt pressure, tools, and memory |
 | P4 | remaining headless routing gaps | source presence is not enough; command behavior must be predictable |
 | P5 | permissions/tool gating recheck | tool availability must stay stable while the rebuild continues |
@@ -126,6 +127,7 @@ Recommended usage:
 | [docs/PRIORITY_REBUILD_BACKLOG.md](./docs/PRIORITY_REBUILD_BACKLOG.md) | high-value rebuild order from top to bottom |
 | [docs/WORKLOG.md](./docs/WORKLOG.md) | implementation log of completed repair work |
 | `docs/archive/` | older migration notes kept out of the repository root |
+| `.recode/lsp.example.json` | example project-local LSP server config |
 
 ## Acknowledgements
 

@@ -192,6 +192,11 @@ export async function buildInstallationHealthDiagnostics(): Promise<Diagnostic[]
   diagnostic.warnings.forEach(warning => {
     items.push(warning.issue);
   });
+  const lspSummary = `LSP: ${diagnostic.lspStatus.configuredServers} configured (${diagnostic.lspStatus.localConfiguredServers} local, ${diagnostic.lspStatus.pluginConfiguredServers} plugin), manager ${diagnostic.lspStatus.initializationStatus}, ${diagnostic.lspStatus.managerServers} instantiated`;
+  items.push(lspSummary);
+  if (diagnostic.lspStatus.initializationError) {
+    items.push(`LSP initialization error: ${diagnostic.lspStatus.initializationError}`);
+  }
   if (diagnostic.hasUpdatePermissions === false) {
     items.push('No write permissions for auto-updates (requires sudo)');
   }

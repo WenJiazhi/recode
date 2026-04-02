@@ -54,6 +54,7 @@
 | 思考量后缀透传 | 可用 | `gpt-5.4(high)` 这类 CPA 风格模型名会保留 |
 | context cap 持久化 | 可用 | `/model-map context 258k` 会保存 `258000` |
 | 便携配置继承 | 可用 | 便携运行时可直接携带本地 `.recode` 目录 |
+| 项目内 LSP 配置 | 可用 | `.recode/lsp.json` 现在也是可用的本地 server 发现入口 |
 
 ## 当前已经验证可用
 
@@ -126,6 +127,7 @@ bun ./dist/cli.js
 | [docs/PRIORITY_REBUILD_BACKLOG.md](./docs/PRIORITY_REBUILD_BACKLOG.md) | 从高价值到低价值的重建顺序 |
 | [docs/WORKLOG.md](./docs/WORKLOG.md) | 已完成修补工作的实现日志 |
 | `docs/archive/` | 存放旧迁移记录，避免继续占据仓库根目录 |
+| `.recode/lsp.example.json` | 项目内 LSP server 配置示例 |
 
 ## 致谢
 
