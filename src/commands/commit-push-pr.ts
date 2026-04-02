@@ -1,4 +1,5 @@
-import type { Command } from '../types/command.js'
+import { getIsNonInteractiveSession } from '../bootstrap/state.js'
+import type { Command, LocalCommandCall } from '../types/command.js'
 import {
   getAttributionTexts,
   getEnhancedPRAttribution,
@@ -153,6 +154,24 @@ const command = {
 
     return [{ type: 'text', text: finalContent }]
   },
+} satisfies Command
+
+const nonInteractiveCall: LocalCommandCall = async () => {
+  const value =
+    '/commit-push-pr is not available in non-interactive mode. Run it inside the interactive recode session.'
+  return { type: 'text', value }
+}
+
+export const commitPushPrNonInteractive = {
+  type: 'local',
+  name: 'commit-push-pr',
+  supportsNonInteractive: true,
+  description: 'Commit, push, and open a PR',
+  isEnabled: () => getIsNonInteractiveSession(),
+  get isHidden() {
+    return !getIsNonInteractiveSession()
+  },
+  load: async () => ({ call: nonInteractiveCall }),
 } satisfies Command
 
 export default command

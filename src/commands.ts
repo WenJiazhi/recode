@@ -11,7 +11,9 @@ import color from './commands/color/index.js'
 import commit from './commands/commit.js'
 import copy from './commands/copy/index.js'
 import desktop from './commands/desktop/index.js'
-import commitPushPr from './commands/commit-push-pr.js'
+import commitPushPr, {
+  commitPushPrNonInteractive,
+} from './commands/commit-push-pr.js'
 import compact from './commands/compact/index.js'
 import config from './commands/config/index.js'
 import { context, contextNonInteractive } from './commands/context/index.js'
@@ -269,6 +271,7 @@ const COMMANDS = memoize((): Command[] => [
   color,
   commit,
   commitPushPr,
+  commitPushPrNonInteractive,
   compact,
   config,
   copy,
