@@ -331,6 +331,27 @@ export async function processSlashCommand(inputString: string, precedingInputBlo
 
   // Check if it's a real command before processing
   if (!hasCommand(commandName, context.options.commands)) {
+    if (builtInCommandNames().has(commandName)) {
+      const unavailableMessage =
+        `/${commandName} isn't available in non-interactive mode. ` +
+        'Run it inside the interactive recode session.'
+
+      return {
+        messages: [
+          createSyntheticUserCaveatMessage(),
+          ...attachmentMessages,
+          createUserMessage({
+            content: prepareUserContent({
+              inputString: unavailableMessage,
+              precedingInputBlocks,
+            }),
+          }),
+        ],
+        shouldQuery: false,
+        resultText: unavailableMessage,
+      }
+    }
+
     // Check if this looks like a command name vs a file path or other input
     // Also check if it's an actual file path that exists
     let isFilePath = false;

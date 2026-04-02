@@ -20,8 +20,8 @@ Status labels:
 | CLI entry and startup | `main.tsx`, `entrypoints/*` | `completed` | `recode --help`, `--version`, and `-p` are verified |
 | REPL screen and UI | `screens/REPL.tsx`, `components/*` | `partial` | starts and is interactive, but UI fidelity is still in progress |
 | Query loop | `query.ts`, `QueryEngine.ts` | `partial` | main prompt loop works, deeper parity still needs audit |
-| Slash command system | `commands.ts`, `commands/*` | `partial` | high-value paths are verified, not every command is fully audited end-to-end |
-| Tool system | `tools.ts`, `tools/*` | `partial` | core runtime tools load, some paths remain gated |
+| Slash command system | `commands.ts`, `commands/*` | `partial` | high-value paths are verified, including `/help`, `/status`, `/doctor`, `/files`, `/diff`, `/tasks`, `/model-map`, and restored built-in `/commit` registration; headless mode now reports built-in interactive-only commands accurately instead of mislabeling them as unknown skills |
+| Tool system | `tools.ts`, `tools/*` | `partial` | core runtime tools load; LSP registration is restored, but some deeper paths remain gated |
 | Settings and config | `utils/settings/*`, config helpers | `completed` | user settings read/write paths are active |
 | Help, status, doctor | corresponding commands | `completed` | interactive and headless high-value paths are repaired and verified |
 | MCP and plugins | `services/mcp/*`, `plugins/*` | `partial` | base list/help paths work, deeper lifecycle paths need more verification |
@@ -38,6 +38,13 @@ Status labels:
 - `recode -p "/help"`
 - `recode -p "/status"`
 - `recode -p "/doctor"`
+- `recode -p "/files"`
+- `recode -p "/diff"`
+- `recode -p "/tasks"`
+- `recode -p "/config"` -> interactive-only guidance message
+- `recode -p "/model"` -> interactive-only guidance message
+- built-in `/commit` appears in help and command registry again
+- built-in `/commit-push-pr` appears in help and command registry again
 - `recode -p "/model-map help"`
 - `recode -p "/model-map status"`
 - `recode auth status`

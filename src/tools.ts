@@ -221,7 +221,10 @@ export function getAllBaseTools(): Tools {
     ...(OverflowTestTool ? [OverflowTestTool] : []),
     ...(CtxInspectTool ? [CtxInspectTool] : []),
     ...(TerminalCaptureTool ? [TerminalCaptureTool] : []),
-    ...(isEnvTruthy(process.env.ENABLE_LSP_TOOL) ? [LSPTool] : []),
+    // Keep the tool registered unconditionally. Runtime availability is still
+    // controlled by LSPTool.isEnabled(), which only turns true once the LSP
+    // manager has initialized and at least one server is connected.
+    LSPTool,
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
     getSendMessageTool(),
     ...(ListPeersTool ? [ListPeersTool] : []),

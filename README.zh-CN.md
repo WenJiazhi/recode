@@ -11,11 +11,41 @@
 
 当前版本：`0.0.1`
 
+## 项目快照
+
+| 项目 | 数值 |
+|---|---|
+| 版本 | `0.0.1` |
+| 运行时 | Bun |
+| 语言 | TypeScript |
+| 源码文件数（`.ts` / `.tsx`） | `2781` |
+| 命令模块数（`src/commands/*`） | `94` |
+| 工具模块数（`src/tools/*`） | `55` |
+| Workspace 包数量 | `6` |
+| 已验证 CLI / headless 命令数量 | `13` |
+| 测试文件数 | `7` |
+| 文档文件数（`docs/*.md` / `docs/*.mdx`） | `30` |
+
 ## 这是什么
 
 - 一个 Bun + TypeScript 终端编程助手
 - 一个我自己持续修复、验证和扩展的可运行仓库
 - 一个强调源码行为和真实可用性的项目，而不是演示壳子
+
+## 当前状态
+
+| 领域 | 状态 | 说明 |
+|---|---|---|
+| CLI 启动 | 可用 | `recode --help` 和 `recode --version` 已验证 |
+| headless prompt 模式 | 可用 | `recode -p "<prompt>"` 已验证 |
+| headless slash commands | 可用 | `/help`、`/status`、`/doctor`、`/model-map` 已验证 |
+| 交互式 REPL | 可用 | 当前推荐日常入口是 `.\recode.cmd` |
+| 模型别名映射 | 可用 | `/model-map` 支持 Opus / Sonnet / Haiku 三组映射 |
+| context cap 持久化 | 可用 | `/model-map context 258k` 已验证 |
+| 本地 provider 配置 | 可用 | 项目内 `.recode/local-provider.json` 路径可用 |
+| CPA 风格 provider 路由 | 可用 | `gpt-5.4(high)` 这类后缀透传已接通 |
+| MCP / 插件 / agents 管理面 | 可用 | 高价值管理命令路径已验证 |
+| 打包产物 `dist/cli.js` | 部分可用 | 可作为构建验证入口，不建议作为长会话主入口 |
 
 ## 当前已经能用的部分
 
@@ -124,19 +154,6 @@ bun ./dist/cli.js
 }
 ```
 
-## recode 额外做的内容
-
-这个仓库不只是把源码摆上来，当前已经有一批明确属于 `recode` 自己的工作：
-
-- 把命令名和主要产品名改成 `recode`
-- 版本统一为 `0.0.1`
-- 主品牌色改成天蓝色
-- 修好 `/help`、`/status`、`/doctor` 等 headless slash command 路径
-- 增加 `/model-map` 做三组 alias 映射
-- 增加项目内 CPA/provider 配置
-- 增加 `/model-map context 258k` 这种 context cap 持久化能力
-- 修好 `/config` 因为失效 `Gates` 引用导致的崩溃
-
 ## 仓库结构
 
 主要目录：
@@ -152,6 +169,12 @@ bun ./dist/cli.js
 - [当前状态](./docs/STATUS.md)
 - [命令与工具审计](./docs/COMMAND_TOOL_AUDIT.md)
 - [工作日志](./docs/WORKLOG.md)
+
+## 致谢
+
+- 当前仓库以 `recode` 的名义独立维护。
+- 它的 Bun + TypeScript 工程基座来自此前围绕 Claude Code CLI 所做的开源逆向与恢复工作，其中包括 `claude-code-best/claude-code` 这一类项目。
+- 当前仓库的目录整理、打包方式、配置流和后续开发由 `recode` 继续维护。
 
 ## 声明
 

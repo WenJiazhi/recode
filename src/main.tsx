@@ -27,7 +27,6 @@ import pickBy from 'lodash-es/pickBy.js';
 import uniqBy from 'lodash-es/uniqBy.js';
 import React from 'react';
 import { getOauthConfig } from './constants/oauth.js';
-import { applyLocalProviderConfig } from './utils/localProviderConfig.js';
 import { getRemoteSessionUrl } from './constants/product.js';
 import { getSystemContext, getUserContext } from './context.js';
 import { init, initializeTelemetryAfterTrust } from './entrypoints/init.js';
@@ -65,6 +64,7 @@ import { jsonParse, writeFileSync_DEPRECATED } from './utils/slowOperations.js';
 import { computeInitialTeamContext } from './utils/swarm/reconnection.js';
 import { initializeWarningHandler } from './utils/warningHandler.js';
 import { isWorktreeModeEnabled } from './utils/worktreeModeEnabled.js';
+import { isFirstPartyAnthropicBaseUrl } from './utils/model/providers.js';
 
 // Lazy require to avoid circular dependency: teammate.ts -> AppState.tsx -> ... -> main.tsx
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -416,7 +416,9 @@ export function startDeferredPrefetches(): void {
 
   // Analytics and feature flag initialization
   void initializeAnalyticsGates();
-  void prefetchOfficialMcpUrls();
+  if (isFirstPartyAnthropicBaseUrl()) {
+    void prefetchOfficialMcpUrls();
+  }
   void refreshModelCapabilities();
 
   // File change detectors deferred from init() to unblock first render
@@ -907,7 +909,6 @@ async function run(): Promise<CommanderCommand> {
   // not when displaying help. This avoids the need for env variable signaling.
   program.hook('preAction', async thisCommand => {
     profileCheckpoint('preAction_start');
-    applyLocalProviderConfig();
     // Await async subprocess loads started at module evaluation (lines 12-20).
     // Nearly free — subprocesses complete during the ~135ms of imports above.
     // Must resolve before init() which triggers the first settings read
@@ -1783,7 +1784,7 @@ async function run(): Promise<CommanderCommand> {
     // two-phase loading). Kicked off here to overlap with setup(); awaited
     // before runHeadless so single-turn -p sees connectors. Skipped under
     // enterprise/strict MCP to preserve policy boundaries.
-    const claudeaiConfigPromise: Promise<Record<string, ScopedMcpServerConfig>> = isNonInteractiveSession && !strictMcpConfig && !doesEnterpriseMcpConfigExist() &&
+    const claudeaiConfigPromise: Promise<Record<string, ScopedMcpServerConfig>> = isFirstPartyAnthropicBaseUrl() && isNonInteractiveSession && !strictMcpConfig && !doesEnterpriseMcpConfigExist() &&
     // --bare / SIMPLE: skip claude.ai proxy servers (datadog, Gmail,
     // Slack, BigQuery, PubMed — 6-14s each to connect). Scripted calls
     // that need MCP pass --mcp-config explicitly.
@@ -2355,8 +2356,10 @@ async function run(): Promise<CommanderCommand> {
       void fetchBootstrapData();
 
       // TODO: Consolidate other prefetches into a single bootstrap request.
-      void prefetchPassesEligibility();
-      if (!getFeatureValue_CACHED_MAY_BE_STALE('tengu_miraculo_the_bard', false)) {
+      if (isFirstPartyAnthropicBaseUrl()) {
+        void prefetchPassesEligibility();
+      }
+      if (isFirstPartyAnthropicBaseUrl() && !getFeatureValue_CACHED_MAY_BE_STALE('tengu_miraculo_the_bard', false)) {
         void prefetchFastModeStatus();
       } else {
         // Kill switch skips the network call, not org-policy enforcement.

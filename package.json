@@ -1,7 +1,7 @@
 ﻿{
   "name": "recode",
   "version": "0.0.1",
-  "description": "Bun and TypeScript terminal coding assistant based on Claude Code secondary development",
+  "description": "Bun and TypeScript terminal coding assistant maintained as the recode project",
   "type": "module",
   "author": "Wen Jiazhi",
   "repository": {
@@ -46,7 +46,7 @@
     "lint:fix": "biome lint --fix src/",
     "format": "biome format --write src/",
     "prepare": "git config core.hooksPath .githooks",
-    "test": "bun test",
+    "test": "bun test ./src/**/__tests__/*.test.ts ./packages/**/__tests__/*.test.ts",
     "check:unused": "knip-bun",
     "health": "bun run scripts/health-check.ts",
     "docs:dev": "npx mintlify dev"

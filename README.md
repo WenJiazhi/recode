@@ -11,11 +11,41 @@ This repository is a working Bun + TypeScript CLI that I am actively repairing, 
 
 Current version: `0.0.1`
 
+## Project Snapshot
+
+| Item | Value |
+|---|---|
+| Version | `0.0.1` |
+| Runtime | Bun |
+| Language | TypeScript |
+| Source files (`.ts` / `.tsx`) | `2781` |
+| Command modules (`src/commands/*`) | `94` |
+| Tool modules (`src/tools/*`) | `55` |
+| Workspace packages | `6` |
+| Verified CLI/headless commands | `13` |
+| Test files | `7` |
+| Docs files (`docs/*.md` / `docs/*.mdx`) | `30` |
+
 ## What It Is
 
 - a Bun + TypeScript terminal coding assistant
 - a real repository that I continue to maintain and improve
 - a project that values runtime behavior and usability over mockups
+
+## Current Status
+
+| Area | Status | Notes |
+|---|---|---|
+| CLI startup | Ready | `recode --help` and `recode --version` verified |
+| Headless prompt mode | Ready | `recode -p "<prompt>"` verified |
+| Headless slash commands | Ready | `/help`, `/status`, `/doctor`, `/model-map` verified |
+| Interactive REPL | Usable | recommended daily entry is `.\recode.cmd` |
+| Model alias mapping | Ready | `/model-map` supports Opus / Sonnet / Haiku mapping |
+| Context cap persistence | Ready | `/model-map context 258k` verified |
+| Local provider config | Ready | project-local `.recode/local-provider.json` path works |
+| CPA-style provider routing | Ready | suffix passthrough such as `gpt-5.4(high)` works |
+| MCP / plugins / agents commands | Ready | high-value management paths verified |
+| Bundled `dist/cli.js` | Partial | build output works for verification, not the preferred long-session entry |
 
 ## What Works Now
 
@@ -124,19 +154,6 @@ Example:
 }
 ```
 
-## recode-specific Work
-
-This repository is not just a raw source snapshot. It already includes `recode`-specific work:
-
-- renamed the command and visible product name to `recode`
-- standardized the release version to `0.0.1`
-- switched the main accent color to sky blue
-- repaired headless slash command paths like `/help`, `/status`, and `/doctor`
-- added `/model-map` for alias-to-model mapping
-- added project-local CPA/provider configuration
-- added context-cap persistence through `/model-map context 258k`
-- repaired the `/config` crash caused by the dead `Gates` settings reference
-
 ## Repository Notes
 
 Main directories:
@@ -152,6 +169,12 @@ Status documents:
 - [Current status](./docs/STATUS.md)
 - [Command and tool audit](./docs/COMMAND_TOOL_AUDIT.md)
 - [Worklog](./docs/WORKLOG.md)
+
+## Acknowledgements
+
+- The current repository is maintained independently as `recode`.
+- Its Bun + TypeScript engineering baseline was bootstrapped from prior open reverse-engineering and restoration work around the Claude Code CLI, including the `claude-code-best/claude-code` project.
+- The current repository structure, packaging, configuration flow, and follow-up development are maintained here as part of the `recode` project.
 
 ## Notes
 

@@ -85,6 +85,11 @@ async function main(): Promise<void> {
         return;
     }
 
+    const { applyLocalProviderConfig } = await import(
+        "../utils/localProviderConfig.js",
+    );
+    applyLocalProviderConfig();
+
     // For all other paths, load the startup profiler
     const { profileCheckpoint } = await import("../utils/startupProfiler.js");
     profileCheckpoint("cli_entry");

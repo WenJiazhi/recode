@@ -11,3 +11,6 @@ coverage
 .codex-loop/
 .recode/local-provider.json
 .recode/api-key.txt
+Portable/
+Portable/**/.recode/local-provider.json
+Portable/**/.recode/api-key.txt

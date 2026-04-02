@@ -47,3 +47,27 @@
 
 - wrote a root README for open-source publication
 - added parity, status, audit, and worklog docs under `docs/`
+
+## 2026-04-02
+
+### Provider bootstrap alignment
+
+- moved project-local provider loading forward into `src/entrypoints/cli.tsx` so `.recode/local-provider.json` is applied before the main startup flow
+- limited Anthropic-only background prefetches in `src/main.tsx` to first-party Anthropic base URLs
+- limited headless GrowthBook initialization in `src/cli/print.ts` to first-party Anthropic base URLs
+- kept the narrower `initializeGrowthBook()` ant-only branch in `main.tsx` unchanged because it is already scoped to the ant build path
+
+### Portable runtime fixes
+
+- moved the local portable copies under `Portable/` inside the repository so the portable work no longer lives off the repository root
+- kept `Portable/recode-portable` as the canonical portable runtime copy
+- removed the incomplete `Portable/recode-portable-local` directory after it was shown to have partial dependencies and to interfere with validation
+- fixed portable search-tool failures by teaching `src/utils/ripgrep.ts` to fall back to the SDK vendored ripgrep binary when the local vendor path does not contain a real `rg.exe`
+- verified the portable runtime resolves ripgrep from `node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-win32/rg.exe`
+- verified `Portable/recode-portable/recode.bat -p "/doctor"` now reports `ripgrep: ok (builtin)`
+
+### Repository hygiene
+
+- marked `Portable/` as a local artifact area in `.gitignore`
+- preserved local-only provider secrets under ignored `.recode` files
+- noted that the old `E:\\recode-portable` directory still exists only because another process is holding it open; the repository copy under `Portable/` is the one that should be used going forward

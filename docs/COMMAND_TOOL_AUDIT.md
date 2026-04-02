@@ -12,8 +12,13 @@ This file records the currently verified high-value command and tool paths.
 - `recode -p "/help"`
 - `recode -p "/status"`
 - `recode -p "/doctor"`
+- `recode -p "/files"`
+- `recode -p "/diff"`
+- `recode -p "/tasks"`
 - `recode -p "/model-map help"`
 - `recode -p "/model-map status"`
+- `recode -p "/config"` returns a non-interactive guidance message
+- `recode -p "/model"` returns a non-interactive guidance message
 
 ### Management surfaces
 
@@ -32,6 +37,8 @@ This file records the currently verified high-value command and tool paths.
 - `/mcp`
 - `/plugin`
 - `/tasks`
+- `/commit`
+- `/commit-push-pr`
 
 ## Verified recode-Specific Feature
 
@@ -56,3 +63,7 @@ Example saved result:
 
 - Not every command in `src/commands/*` is fully audited yet.
 - The commands listed above are the ones explicitly validated during the current rebuild loop.
+- `LSP` is now always registered in the base tool pool and relies on runtime connectivity instead of an extra external env gate.
+- Interactive-only built-in commands no longer fall through to the misleading `Unknown skill` message in headless mode.
+- Built-in `/commit` and `/commit-push-pr` are back in the command registry; they were previously missing from the assembled command list even though their source files existed.
+- LSP manager initialization currently returns `success` with `0` discovered servers in this runtime, so the next step is configuration discovery rather than more registration work.

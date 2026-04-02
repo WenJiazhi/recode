@@ -16,7 +16,7 @@ import compact from './commands/compact/index.js'
 import config from './commands/config/index.js'
 import { context, contextNonInteractive } from './commands/context/index.js'
 import cost from './commands/cost/index.js'
-import diff from './commands/diff/index.js'
+import diff, { diffNonInteractive } from './commands/diff/index.js'
 import ctx_viz from './commands/ctx_viz/index.js'
 import doctor, { doctorNonInteractive } from './commands/doctor/index.js'
 import memory from './commands/memory/index.js'
@@ -42,7 +42,7 @@ import session from './commands/session/index.js'
 import share from './commands/share/index.js'
 import skills from './commands/skills/index.js'
 import status, { statusNonInteractive } from './commands/status/index.js'
-import tasks from './commands/tasks/index.js'
+import tasks, { tasksNonInteractive } from './commands/tasks/index.js'
 import teleport from './commands/teleport/index.js'
 /* eslint-disable @typescript-eslint/no-require-imports */
 const agentsPlatform =
@@ -267,6 +267,8 @@ const COMMANDS = memoize((): Command[] => [
   chrome,
   clear,
   color,
+  commit,
+  commitPushPr,
   compact,
   config,
   copy,
@@ -275,6 +277,7 @@ const COMMANDS = memoize((): Command[] => [
   contextNonInteractive,
   cost,
   diff,
+  diffNonInteractive,
   doctor,
   doctorNonInteractive,
   effort,
@@ -346,6 +349,7 @@ const COMMANDS = memoize((): Command[] => [
   passes,
   ...(peersCmd ? [peersCmd] : []),
   tasks,
+  tasksNonInteractive,
   ...(workflowsCmd ? [workflowsCmd] : []),
   ...(torch ? [torch] : []),
   ...(process.env.USER_TYPE === 'ant' && !process.env.IS_DEMO
