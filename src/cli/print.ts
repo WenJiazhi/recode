@@ -40,6 +40,7 @@ import {
 } from 'src/tools/AgentTool/loadAgentsDir.js'
 import type { Message, NormalizedUserMessage } from 'src/types/message.js'
 import type { QueuedCommand } from 'src/types/textInputTypes.js'
+import { NO_CONTENT_MESSAGE } from 'src/constants/messages.js'
 import {
   dequeue,
   dequeueAllMatching,
@@ -936,10 +937,13 @@ export async function runHeadless(
       }
       switch (lastMessage.subtype) {
         case 'success':
+          const resultText =
+            typeof lastMessage.result === 'string' &&
+            lastMessage.result.trim() !== ''
+              ? lastMessage.result
+              : NO_CONTENT_MESSAGE
           writeToStdout(
-            (lastMessage.result as string).endsWith('\n')
-              ? (lastMessage.result as string)
-              : (lastMessage.result as string) + '\n',
+            resultText.endsWith('\n') ? resultText : resultText + '\n',
           )
           break
         case 'error_during_execution':
