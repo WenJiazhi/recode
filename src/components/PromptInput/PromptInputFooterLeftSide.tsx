@@ -1,5 +1,5 @@
-import { c as _c } from "react/compiler-runtime";
 // biome-ignore-all assist/source/organizeImports: ANT-ONLY import markers must not be reordered
+import { c as _c } from "react/compiler-runtime";
 import { feature } from 'bun:bundle';
 // Dead code elimination: conditional import for COORDINATOR_MODE
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -31,6 +31,7 @@ import { KeyboardShortcutHint } from '../design-system/KeyboardShortcutHint.js';
 import { Byline } from '../design-system/Byline.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { useTasksV2 } from '../../hooks/useTasksV2.js';
+import { isEnvTruthy } from '../../utils/envUtils.js';
 import { formatDuration } from '../../utils/format.js';
 import { VoiceWarmupHint } from './VoiceIndicator.js';
 import { useVoiceEnabled } from '../../hooks/useVoiceEnabled.js';
@@ -49,6 +50,8 @@ const proactiveModule = feature('PROACTIVE') || feature('KAIROS') ? require('../
 const NO_OP_SUBSCRIBE = (_cb: () => void) => () => {};
 const NULL = () => null;
 const MAX_VOICE_HINT_SHOWS = 3;
+const VOICE_MODE_ENABLED =
+  feature('VOICE_MODE') ? true : isEnvTruthy(process.env.FEATURE_VOICE_MODE);
 type Props = {
   exitMessage: {
     show: boolean;
@@ -158,7 +161,7 @@ export function PromptInputFooterLeftSide(t0) {
   if (isPasting) {
     let t1;
     if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
-      t1 = <Text dimColor={true} key="pasting-message">Pasting text…</Text>;
+      t1 = <Text dimColor={true} key="pasting-message">Pasting text...</Text>;
       $[2] = t1;
     } else {
       t1 = $[2];
@@ -251,7 +254,7 @@ function ModeIndicator({
   const modeCycleShortcut = useShortcutDisplay('chat:cycleMode', 'Chat', 'shift+tab');
   const tasks = useAppState(s => s.tasks);
   const teamContext = useAppState(s_0 => s_0.teamContext);
-  // Set once in initialState (main.tsx --remote mode) and never mutated — lazy
+  // Set once in initialState (main.tsx --remote mode) and never mutated 闁?lazy
   // init captures the immutable value without a subscription.
   const store = useAppStateStore();
   const [remoteSessionUrl] = useState(() => store.getState().remoteSessionUrl);
@@ -262,13 +265,10 @@ function ModeIndicator({
   const prStatus = usePrStatus(isLoading, isPrStatusEnabled());
   const hasTmuxSession = useAppState(s_4 => ("external" as string) === 'ant' && s_4.tungstenActiveSession !== undefined);
   const nextTickAt = useSyncExternalStore(proactiveModule?.subscribeToProactiveChanges ?? NO_OP_SUBSCRIBE, proactiveModule?.getNextTickAt ?? NULL, NULL);
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
-  const voiceEnabled = feature('VOICE_MODE') ? useVoiceEnabled() : false;
-  const voiceState = feature('VOICE_MODE') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const voiceEnabled = VOICE_MODE_ENABLED ? useVoiceEnabled() : false;
+  const voiceState = VOICE_MODE_ENABLED ?
   useVoiceState(s_5 => s_5.voiceState) : 'idle' as const;
-  const voiceWarmingUp = feature('VOICE_MODE') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const voiceWarmingUp = VOICE_MODE_ENABLED ?
   useVoiceState(s_6 => s_6.voiceWarmingUp) : false;
   const hasSelection = useHasSelection();
   const selGetState = useSelection().getState;
@@ -280,21 +280,18 @@ function ModeIndicator({
   const escShortcut = useShortcutDisplay('chat:cancel', 'Chat', 'esc').toLowerCase();
   const todosShortcut = useShortcutDisplay('app:toggleTodos', 'Global', 'ctrl+t');
   const killAgentsShortcut = useShortcutDisplay('chat:killAgents', 'Chat', 'ctrl+x ctrl+k');
-  const voiceKeyShortcut = feature('VOICE_MODE') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const voiceKeyShortcut = VOICE_MODE_ENABLED ?
   useShortcutDisplay('voice:pushToTalk', 'Chat', 'Space') : '';
   // Captured at mount so the hint doesn't flicker mid-session if another
   // CC instance increments the counter. Incremented once via useEffect the
-  // first time voice is enabled in this session — approximates "hint was
+  // first time voice is enabled in this session 闁?approximates "hint was
   // shown" without tracking the exact render-time condition (which depends
   // on parts/hintParts computed after the early-return hooks boundary).
-  const [voiceHintUnderCap] = feature('VOICE_MODE') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const [voiceHintUnderCap] = VOICE_MODE_ENABLED ?
   useState(() => (getGlobalConfig().voiceFooterHintSeenCount ?? 0) < MAX_VOICE_HINT_SHOWS) : [false];
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
-  const voiceHintIncrementedRef = feature('VOICE_MODE') ? useRef(false) : null;
+  const voiceHintIncrementedRef = VOICE_MODE_ENABLED ? useRef(false) : null;
   useEffect(() => {
-    if (feature('VOICE_MODE')) {
+    if (VOICE_MODE_ENABLED) {
       if (!voiceEnabled || !voiceHintUnderCap) return;
       if (voiceHintIncrementedRef?.current) return;
       if (voiceHintIncrementedRef) voiceHintIncrementedRef.current = true;
@@ -327,9 +324,9 @@ function ModeIndicator({
   // Count primary items (permission mode or coordinator mode, background tasks, and teams)
   const primaryItemCount = (isCoordinator || hasActiveMode ? 1 : 0) + (hasBackgroundTasks ? 1 : 0) + (hasTeams ? 1 : 0);
 
-  // PR indicator is short (~10 chars) — unlike the old diff indicator the
+  // PR indicator is short (~10 chars) 闁?unlike the old diff indicator the
   // >=100 threshold was tuned for. Now that auto mode is effectively the
-  // baseline, primaryItemCount is ≥1 for most sessions; keep the threshold
+  // baseline, primaryItemCount is 闁? for most sessions; keep the threshold
   // low enough to show PR status on standard 80-col terminals.
   const shouldShowPrStatus = isPrStatusEnabled() && prStatus.number !== null && prStatus.reviewState !== null && prStatus.url !== null && primaryItemCount < 2 && (primaryItemCount === 0 || columns >= 80);
 
@@ -361,10 +358,10 @@ function ModeIndicator({
   ...(remoteSessionUrl ? [<Link url={remoteSessionUrl} key="remote">
             <Text color="ide">{figures.circleDouble} remote</Text>
           </Link>] : []),
-  // BackgroundTaskStatus is NOT in parts — it renders as a Box sibling so
+  // BackgroundTaskStatus is NOT in parts 闁?it renders as a Box sibling so
   // its click-target Box isn't nested inside the <Text wrap="truncate">
   // wrapper (reconciler throws on Box-in-Text).
-  // Tmux pill (ant-only) — appears right after tasks in nav order
+  // Tmux pill (ant-only) 闁?appears right after tasks in nav order
   ...(("external" as string) === 'ant' && hasTmuxSession ? [<TungstenPill key="tmux" selected={tmuxSelected} />] : []), ...(isAgentSwarmsEnabled() && hasTeams ? [<TeamStatus key="teams" teamsSelected={teamsSelected} showHint={showHint && !hasBackgroundTasks} />] : []), ...(shouldShowPrStatus ? [<PrBadge key="pr-status" number={prStatus.number!} url={prStatus.url!} reviewState={prStatus.reviewState!} />] : [])];
 
   // Check if any in-process teammates exist (for hint text cycling)
@@ -385,7 +382,7 @@ function ModeIndicator({
 
   // When we have teammate pills, always render them on their own line above other parts
   if (hasTeammatePills) {
-    // Don't append spinner hints when viewing a completed teammate —
+    // Don't append spinner hints when viewing a completed teammate 闁?
     // the "esc to return to team lead" hint already replaces "esc to interrupt"
     const otherParts = [...(modePart ? [modePart] : []), ...parts, ...(isViewingCompletedTeammate ? [] : hintParts)];
     return <Box flexDirection="column">
@@ -398,11 +395,11 @@ function ModeIndicator({
       </Box>;
   }
 
-  // Add "↓ to manage tasks" hint when panel has visible rows
+  // Add "闁?to manage tasks" hint when panel has visible rows
   const hasCoordinatorTasks = ("external" as string) === 'ant' && getVisibleAgentTasks(tasks).length > 0;
 
   // Tasks pill renders as a Box sibling (not a parts entry) so its
-  // click-target Box isn't nested inside <Text wrap="truncate"> — the
+  // click-target Box isn't nested inside <Text wrap="truncate"> 闁?the
   // reconciler throws on Box-in-Text. Computed here so the empty-checks
   // below still treat "pill present" as non-empty.
   const tasksPart = hasBackgroundTasks && !hasTeammatePills && !shouldHideTasksFooter(tasks, showSpinnerTree) ? <BackgroundTaskStatus tasksSelected={tasksSelected} isViewingTeammate={isViewingTeammate} teammateFooterIndex={teammateFooterIndex} isLeaderIdle={!isLoading} onOpenDialog={onOpenTasksDialog} /> : null;
@@ -412,16 +409,16 @@ function ModeIndicator({
       </Text>);
   }
 
-  // Only replace the idle voice hint when there's something to say — otherwise
+  // Only replace the idle voice hint when there's something to say 闁?otherwise
   // fall through instead of showing an empty Byline. "esc to clear" was removed
   // (looked like "esc to interrupt" when idle; esc-clears-selection is standard
   // UX) leaving only ctrl+c (copyOnSelect off) and the xterm.js native-select hint.
   const copyOnSelect = getGlobalConfig().copyOnSelect ?? true;
   const selectionHintHasContent = hasSelection && (!copyOnSelect || isXtermJs());
 
-  // Warmup hint takes priority — when the user is actively holding
+  // Warmup hint takes priority 闁?when the user is actively holding
   // the activation key, show feedback regardless of other hints.
-  if (feature('VOICE_MODE') && voiceEnabled && voiceWarmingUp) {
+  if (VOICE_MODE_ENABLED && voiceEnabled && voiceWarmingUp) {
     parts.push(<VoiceWarmupHint key="voice-warmup" />);
   } else if (isFullscreenEnvEnabled() && selectionHintHasContent) {
     // xterm.js (VS Code/Cursor/Windsurf) force-selection modifier is
@@ -429,7 +426,7 @@ function ModeIndicator({
     //   macOS:     altKey && macOptionClickForcesSelection (VS Code default: false)
     //   non-macOS: shiftKey
     // On macOS, if we RECEIVED an alt+click (lastPressHadAlt), the VS Code
-    // setting is off — xterm.js would have consumed the event otherwise.
+    // setting is off 闁?xterm.js would have consumed the event otherwise.
     // Tell the user the exact setting to flip instead of repeating the
     // option+click hint they just tried.
     // Non-reactive getState() read is safe: lastPressHadAlt is immutable
@@ -442,24 +439,24 @@ function ModeIndicator({
           {isXtermJs() && (altClickFailed ? <Text>set macOptionClickForcesSelection in VS Code settings</Text> : <KeyboardShortcutHint shortcut={isMac ? 'option+click' : 'shift+click'} action="native select" />)}
         </Byline>
       </Text>);
-  } else if (feature('VOICE_MODE') && parts.length > 0 && showHint && voiceEnabled && voiceState === 'idle' && hintParts.length === 0 && voiceHintUnderCap) {
+  } else if (VOICE_MODE_ENABLED && parts.length > 0 && showHint && voiceEnabled && voiceState === 'idle' && hintParts.length === 0 && voiceHintUnderCap) {
     parts.push(<Text dimColor key="voice-hint">
         hold {voiceKeyShortcut} to speak
       </Text>);
   }
   if ((tasksPart || hasCoordinatorTasks) && showHint && !hasTeams) {
     parts.push(<Text dimColor key="manage-tasks">
-        {tasksSelected ? <KeyboardShortcutHint shortcut="Enter" action="view tasks" /> : <KeyboardShortcutHint shortcut="↓" action="manage" />}
+        {tasksSelected ? <KeyboardShortcutHint shortcut="Enter" action="view tasks" /> : <KeyboardShortcutHint shortcut="Right" action="manage" />}
       </Text>);
   }
 
-  // In fullscreen the bottom section is flexShrink:0 — every row here
+  // In fullscreen the bottom section is flexShrink:0 闁?every row here
   // is a row stolen from the ScrollBox. This component must have a STABLE
   // height so the footer never grows/shrinks and shifts scroll content.
-  // Returning null when parts is empty (e.g. StatusLine on → suppressHint
-  // → showHint=false → no "? for shortcuts") would let a later-added
+  // Returning null when parts is empty (e.g. StatusLine on 闁?suppressHint
+  // 闁?showHint=false 闁?no "? for shortcuts") would let a later-added
   // part (e.g. the selection copy/native-select hints) grow the column
-  // from 0→1 row. Always render 1 row in fullscreen; return a space when
+  // from 0闁? row. Always render 1 row in fullscreen; return a space when
   // empty so Yoga reserves the row without painting anything visible.
   if (parts.length === 0 && !tasksPart && !modePart) {
     return isFullscreenEnvEnabled() ? <Text> </Text> : null;
@@ -484,7 +481,7 @@ function ModeIndicator({
 function getSpinnerHintParts(isLoading: boolean, escShortcut: string, todosShortcut: string, killAgentsShortcut: string, hasTaskItems: boolean, expandedView: 'none' | 'tasks' | 'teammates', hasTeammates: boolean, hasRunningAgentTasks: boolean, isKillAgentsConfirmShowing: boolean): React.ReactElement[] {
   let toggleAction: string;
   if (hasTeammates) {
-    // Cycling: none → tasks → teammates → none
+    // Cycling: none 闁?tasks 闁?teammates 闁?none
     switch (expandedView) {
       case 'none':
         toggleAction = 'show tasks';

@@ -11,7 +11,7 @@ type Props = {
    * - `error`: Red cross (✗)
    * - `warning`: Yellow warning symbol (⚠)
    * - `info`: Blue info symbol (ℹ)
-   * - `pending`: Dimmed circle (○)
+   * - `pending`: Dimmed circle (◌)
    * - `loading`: Dimmed ellipsis (…)
    */
   status: Status;

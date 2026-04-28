@@ -8,6 +8,7 @@ import { filterToolProgressMessages, type Tool, type Tools } from '../../../Tool
 import type { NormalizedUserMessage, ProgressMessage } from '../../../types/message.js';
 import { deleteClassifierApproval, getClassifierApproval, getYoloClassifierApproval } from '../../../utils/classifierApprovals.js';
 import type { buildMessageLookups } from '../../../utils/messages.js';
+import { isBriefFeatureEnabled } from '../../../tools/BriefTool/briefFeatureEnabled.js';
 import { MessageResponse } from '../../MessageResponse.js';
 import { HookProgressMessage } from '../HookProgressMessage.js';
 type Props = {
@@ -38,8 +39,7 @@ export function UserToolSuccessMessage({
   // Hook stays inside feature() ternary so external builds don't pay a
   // per-scrollback-message store subscription — same pattern as
   // UserPromptMessage.tsx.
-  const isBriefOnly = feature('KAIROS') || feature('KAIROS_BRIEF') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const isBriefOnly = isBriefFeatureEnabled() ?
   useAppState(s => s.isBriefOnly) : false;
 
   // Capture classifier approval once on mount, then delete from Map to prevent linear growth.

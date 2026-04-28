@@ -1,3 +1,4 @@
+// biome-ignore-all lint/complexity/useRegexLiterals: terminal escape-sequence patterns intentionally stay in string form to avoid noControlCharactersInRegex false positives
 /**
  * Keyboard input parser - converts terminal input to key events
  *

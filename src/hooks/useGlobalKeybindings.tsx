@@ -12,6 +12,7 @@ import type { Screen } from '../screens/REPL.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../services/analytics/index.js';
 import { useAppState, useSetAppState } from '../state/AppState.js';
+import { isBriefFeatureEnabled } from '../tools/BriefTool/briefFeatureEnabled.js';
 import { count } from '../utils/array.js';
 import { getTerminalPanel } from '../utils/terminalPanel.js';
 type Props = {
@@ -89,11 +90,11 @@ export function GlobalKeybindingHandlers({
 
   // Toggle transcript mode (ctrl+o). Two-way prompt ↔ transcript.
   // Brief view has its own dedicated toggle on ctrl+shift+b.
-  const isBriefOnly = feature('KAIROS') || feature('KAIROS_BRIEF') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const briefFeatureEnabled = isBriefFeatureEnabled();
+  const isBriefOnly = briefFeatureEnabled ?
   useAppState(s_0 => s_0.isBriefOnly) : false;
   const handleToggleTranscript = useCallback(() => {
-    if (feature('KAIROS') || feature('KAIROS_BRIEF')) {
+    if (briefFeatureEnabled) {
       // Escape hatch: GB kill-switch while defaultView=chat was persisted
       // can leave isBriefOnly stuck on, showing a blank filterForBriefTool
       // view. Users will reach for ctrl+o — clear the stuck state first.
@@ -158,7 +159,7 @@ export function GlobalKeybindingHandlers({
   // transition always allowed so the same key that got you in gets you
   // out even if the GB kill-switch fires mid-session.
   const handleToggleBrief = useCallback(() => {
-    if (feature('KAIROS') || feature('KAIROS_BRIEF')) {
+    if (briefFeatureEnabled) {
       /* eslint-disable @typescript-eslint/no-require-imports */
       const {
         isBriefEnabled: isBriefEnabled_0
@@ -188,8 +189,7 @@ export function GlobalKeybindingHandlers({
   useKeybinding('app:toggleTranscript', handleToggleTranscript, {
     context: 'Global'
   });
-  if (feature('KAIROS') || feature('KAIROS_BRIEF')) {
-    // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  if (briefFeatureEnabled) {
     useKeybinding('app:toggleBrief', handleToggleBrief, {
       context: 'Global'
     });

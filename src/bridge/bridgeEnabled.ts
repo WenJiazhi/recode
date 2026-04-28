@@ -13,6 +13,10 @@ import * as authModule from '../utils/auth.js'
 import { isEnvTruthy } from '../utils/envUtils.js'
 import { lt } from '../utils/semver.js'
 
+export function isBridgeFeatureEnabled(): boolean {
+  return feature('BRIDGE_MODE') ? true : isEnvTruthy(process.env.FEATURE_BRIDGE_MODE)
+}
+
 /**
  * Runtime check for bridge mode entitlement.
  *
@@ -29,7 +33,7 @@ export function isBridgeEnabled(): boolean {
   // Positive ternary pattern — see docs/feature-gating.md.
   // Negative pattern (if (!feature(...)) return) does not eliminate
   // inline string literals from external builds.
-  return feature('BRIDGE_MODE')
+  return isBridgeFeatureEnabled()
     ? isClaudeAISubscriber() &&
         getFeatureValue_CACHED_MAY_BE_STALE('tengu_ccr_bridge', false)
     : false
@@ -48,7 +52,7 @@ export function isBridgeEnabled(): boolean {
  * `isBridgeEnabled()` instead.
  */
 export async function isBridgeEnabledBlocking(): Promise<boolean> {
-  return feature('BRIDGE_MODE')
+  return isBridgeFeatureEnabled()
     ? isClaudeAISubscriber() &&
         (await checkGate_CACHED_OR_BLOCKING('tengu_ccr_bridge'))
     : false
@@ -68,7 +72,7 @@ export async function isBridgeEnabledBlocking(): Promise<boolean> {
  * that re-login would fix it. See CC-1165 / gh-33105.
  */
 export async function getBridgeDisabledReason(): Promise<string | null> {
-  if (feature('BRIDGE_MODE')) {
+  if (isBridgeFeatureEnabled()) {
     if (!isClaudeAISubscriber()) {
       return 'Remote Control requires a claude.ai subscription. Run `claude auth login` to sign in with your claude.ai account.'
     }
@@ -124,7 +128,7 @@ function getOauthAccountInfo(): ReturnType<
  * on the env-based implementation regardless of this gate.
  */
 export function isEnvLessBridgeEnabled(): boolean {
-  return feature('BRIDGE_MODE')
+  return isBridgeFeatureEnabled()
     ? getFeatureValue_CACHED_MAY_BE_STALE('tengu_bridge_repl_v2', false)
     : false
 }
@@ -139,7 +143,7 @@ export function isEnvLessBridgeEnabled(): boolean {
  * Defaults to true — the shim stays active until explicitly disabled.
  */
 export function isCseShimEnabled(): boolean {
-  return feature('BRIDGE_MODE')
+  return isBridgeFeatureEnabled()
     ? getFeatureValue_CACHED_MAY_BE_STALE(
         'tengu_bridge_repl_v2_cse_shim_enabled',
         true,
@@ -161,7 +165,7 @@ export function checkBridgeMinVersion(): string | null {
   // Positive pattern — see docs/feature-gating.md.
   // Negative pattern (if (!feature(...)) return) does not eliminate
   // inline string literals from external builds.
-  if (feature('BRIDGE_MODE')) {
+  if (isBridgeFeatureEnabled()) {
     const config = getDynamicConfig_CACHED_MAY_BE_STALE<{
       minVersion: string
     }>('tengu_bridge_min_version', { minVersion: '0.0.0' })

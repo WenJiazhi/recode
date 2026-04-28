@@ -58,6 +58,7 @@ import {
   executePreCompactHooks,
 } from '../../utils/hooks.js'
 import { logError } from '../../utils/log.js'
+import { isPromptCacheBreakFeatureEnabled } from '../../utils/promptCacheBreakFeatureEnabled.js'
 import { MEMORY_TYPE_VALUES } from '../../utils/memory/types.js'
 import {
   createCompactBoundaryMessage,
@@ -697,7 +698,7 @@ export async function compactConversation(
     })
 
     // Reset cache read baseline so the post-compact drop isn't flagged as a break
-    if (feature('PROMPT_CACHE_BREAK_DETECTION')) {
+    if (isPromptCacheBreakFeatureEnabled()) {
       notifyCompaction(
         context.options.querySource ?? 'compact',
         context.agentId,
@@ -1046,7 +1047,7 @@ export async function partialCompactConversation(
       }),
     ]
 
-    if (feature('PROMPT_CACHE_BREAK_DETECTION')) {
+    if (isPromptCacheBreakFeatureEnabled()) {
       notifyCompaction(
         context.options.querySource ?? 'compact',
         context.agentId,

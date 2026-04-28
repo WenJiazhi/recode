@@ -8,13 +8,13 @@ import issue from './commands/issue/index.js'
 import feedback from './commands/feedback/index.js'
 import clear from './commands/clear/index.js'
 import color from './commands/color/index.js'
-import commit from './commands/commit.js'
+import commit, { commitNonInteractive } from './commands/commit.js'
 import copy from './commands/copy/index.js'
 import desktop from './commands/desktop/index.js'
 import commitPushPr, {
   commitPushPrNonInteractive,
 } from './commands/commit-push-pr.js'
-import compact from './commands/compact/index.js'
+import compact, { compactNonInteractive } from './commands/compact/index.js'
 import config from './commands/config/index.js'
 import { context, contextNonInteractive } from './commands/context/index.js'
 import cost from './commands/cost/index.js'
@@ -25,8 +25,10 @@ import memory from './commands/memory/index.js'
 import help, { helpNonInteractive } from './commands/help/index.js'
 import ide from './commands/ide/index.js'
 import init from './commands/init.js'
+import { initNonInteractive } from './commands/init.js'
 import initVerifiers from './commands/init-verifiers.js'
 import keybindings from './commands/keybindings/index.js'
+import { isEnvTruthy } from './utils/envUtils.js'
 import login from './commands/login/index.js'
 import logout from './commands/logout/index.js'
 import installGitHubApp from './commands/install-github-app/index.js'
@@ -105,7 +107,9 @@ const subscribePr = feature('KAIROS_GITHUB_WEBHOOKS')
   : null
 const ultraplan = feature('ULTRAPLAN')
   ? require('./commands/ultraplan.js').default
-  : null
+  : isEnvTruthy(process.env.FEATURE_ULTRAPLAN)
+    ? require('./commands/ultraplan.js').default
+    : null
 const torch = feature('TORCH') ? require('./commands/torch.js').default : null
 const peersCmd = feature('UDS_INBOX')
   ? (
@@ -270,9 +274,11 @@ const COMMANDS = memoize((): Command[] => [
   chrome,
   clear,
   color,
+  commitNonInteractive,
   commit,
   commitPushPrNonInteractive,
   commitPushPr,
+  compactNonInteractive,
   compact,
   config,
   copy,
@@ -289,10 +295,11 @@ const COMMANDS = memoize((): Command[] => [
   fast,
   files,
   heapDump,
-  help,
-  helpNonInteractive,
-  ide,
-  init,
+    help,
+    helpNonInteractive,
+    ide,
+    initNonInteractive,
+    init,
   keybindings,
   installGitHubApp,
   installSlackApp,
@@ -327,21 +334,38 @@ const COMMANDS = memoize((): Command[] => [
   securityReview,
   terminalSetup,
   upgrade,
-  extraUsage,
-  extraUsageNonInteractive,
-  rateLimitOptions,
+    extraUsage,
+    extraUsageNonInteractive,
+    rateLimitOptions,
   usage,
   usageReport,
+  ...(ultraplan
+    ? [ultraplan]
+    : isEnvTruthy(process.env.FEATURE_ULTRAPLAN)
+      ? [require('./commands/ultraplan.js').default]
+      : []),
   vim,
-  ...(webCmd ? [webCmd] : []),
+    ...(webCmd ? [webCmd] : []),
   ...(forkCmd ? [forkCmd] : []),
   ...(buddy ? [buddy] : []),
   ...(proactive ? [proactive] : []),
-  ...(briefCommand ? [briefCommand] : []),
+  ...(briefCommand
+    ? [briefCommand]
+    : isEnvTruthy(process.env.FEATURE_KAIROS_BRIEF)
+      ? [require('./commands/brief.js').default]
+      : []),
   ...(assistantCommand ? [assistantCommand] : []),
-  ...(bridge ? [bridge] : []),
+  ...(bridge
+    ? [bridge]
+    : isEnvTruthy(process.env.FEATURE_BRIDGE_MODE)
+      ? [require('./commands/bridge/index.js').default]
+      : []),
   ...(remoteControlServerCommand ? [remoteControlServerCommand] : []),
-  ...(voiceCommand ? [voiceCommand] : []),
+  ...(voiceCommand
+    ? [voiceCommand]
+    : isEnvTruthy(process.env.FEATURE_VOICE_MODE)
+      ? [require('./commands/voice/index.js').default]
+      : []),
   thinkback,
   thinkbackPlay,
   permissions,
@@ -538,7 +562,9 @@ export async function getCommands(cwd: string): Promise<Command[]> {
  * Use this when dynamic skills are added to invalidate cached command lists.
  */
 export function clearCommandMemoizationCaches(): void {
+  COMMANDS.cache?.clear?.()
   loadAllCommands.cache?.clear?.()
+  builtInCommandNames.cache?.clear?.()
   getSkillToolCommands.cache?.clear?.()
   getSlashCommandToolSkills.cache?.clear?.()
   // getSkillIndex in skillSearch/localSearch.ts is a separate memoization layer

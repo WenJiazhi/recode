@@ -3,6 +3,14 @@ import { join } from "path";
 
 const outdir = "dist";
 
+// Match the CCB merge items we intentionally support in packaged builds.
+// Additional flags can still be enabled with FEATURE_<NAME>=1 at build time.
+const DEFAULT_BUILD_FEATURES = ["TRANSCRIPT_CLASSIFIER", "CHICAGO_MCP", "VOICE_MODE", "BRIDGE_MODE", "KAIROS_BRIEF", "AWAY_SUMMARY", "TOKEN_BUDGET", "PROMPT_CACHE_BREAK_DETECTION", "VERIFICATION_AGENT", "ULTRAPLAN", "AGENT_TRIGGERS", "AGENT_TRIGGERS_REMOTE", "BUILTIN_EXPLORE_PLAN_AGENTS", "EXTRACT_MEMORIES", "LODESTONE", "SHOT_STATS"];
+const envFeatures = Object.keys(process.env)
+    .filter((key) => key.startsWith("FEATURE_"))
+    .map((key) => key.replace("FEATURE_", ""));
+const features = [...new Set([...DEFAULT_BUILD_FEATURES, ...envFeatures])];
+
 // Step 1: Clean output directory
 const { rmSync } = await import("fs");
 rmSync(outdir, { recursive: true, force: true });
@@ -15,6 +23,7 @@ const result = await Bun.build({
     outdir,
     target: "bun",
     splitting: false,
+    features,
 });
 
 if (!result.success) {

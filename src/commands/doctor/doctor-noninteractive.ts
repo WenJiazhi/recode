@@ -58,11 +58,34 @@ export const call: LocalCommandCall = async () => {
       `LSP example config: ${diagnostic.lspStatus.localExamplePresent ? diagnostic.lspStatus.localExamplePath : 'missing'}`,
       `LSP configured servers: ${diagnostic.lspStatus.configuredServers} (${diagnostic.lspStatus.localConfiguredServers} local, ${diagnostic.lspStatus.pluginConfiguredServers} plugin)`,
       `LSP manager status: ${diagnostic.lspStatus.initializationStatus}`,
-      `LSP instantiated servers: ${diagnostic.lspStatus.managerServers} (${diagnostic.lspStatus.activeServers} active, ${diagnostic.lspStatus.errorServers} error)`,
+      `LSP instantiated servers: ${diagnostic.lspStatus.managerServers} (${diagnostic.lspStatus.runningServers} running, ${diagnostic.lspStatus.stoppedServers} stopped, ${diagnostic.lspStatus.startingServers} starting/stopping, ${diagnostic.lspStatus.errorServers} error)`,
     )
+    if (
+      diagnostic.lspStatus.localConfigPresent &&
+      !diagnostic.lspStatus.localConfigValid
+    ) {
+      lines.push('LSP local config validation: failed')
+    }
+    if (diagnostic.lspStatus.localConfigError) {
+      lines.push(`LSP local config error: ${diagnostic.lspStatus.localConfigError}`)
+    }
 
     if (diagnostic.lspStatus.initializationError) {
       lines.push(`LSP initialization error: ${diagnostic.lspStatus.initializationError}`)
+    }
+    if (diagnostic.lspStatus.exampleServers.length > 0) {
+      for (const server of diagnostic.lspStatus.exampleServers) {
+        lines.push(
+          `LSP example server: ${server.name} -> ${server.commandLine} (${server.launcherInstalled ? 'launcher ok' : 'launcher missing'})`,
+        )
+      }
+    }
+    if (diagnostic.lspStatus.configuredLocalServers.length > 0) {
+      for (const server of diagnostic.lspStatus.configuredLocalServers) {
+        lines.push(
+          `LSP local server: ${server.name} -> ${server.commandLine} (${server.launcherInstalled ? 'launcher ok' : 'launcher missing'})`,
+        )
+      }
     }
     if (diagnostic.lspStatus.quickstartHint) {
       lines.push(`LSP quickstart: ${diagnostic.lspStatus.quickstartHint}`)

@@ -417,6 +417,61 @@ function syncRemoteEvalToDisk(): void {
 }
 
 /**
+ * Local default overrides for coding-critical GrowthBook feature gates.
+ *
+ * These mirror the CCB P0/P1 merge policy: only enable features that already
+ * exist in the restored source tree and do not require Anthropic-internal
+ * infrastructure to function. Set CLAUDE_CODE_DISABLE_LOCAL_GATES=1 to bypass.
+ */
+const LOCAL_GATE_DEFAULTS: Record<string, unknown> = {
+  // P0: pure local/runtime features
+  tengu_keybinding_customization_release: true,
+  tengu_streaming_tool_execution2: true,
+  tengu_kairos_cron: true,
+  tengu_amber_json_tools: true,
+  tengu_immediate_model_command: true,
+  tengu_basalt_3kr: true,
+  tengu_pebble_leaf_prune: true,
+  tengu_chair_sermon: true,
+  tengu_lodestone_enabled: true,
+  tengu_auto_background_agents: true,
+  tengu_fgts: true,
+
+  // P1: API-backed but source-present coding surfaces
+  tengu_session_memory: true,
+  tengu_passport_quail: true,
+  tengu_moth_copse: true,
+  tengu_coral_fern: true,
+  tengu_chomp_inflection: true,
+  tengu_hive_evidence: true,
+  tengu_kairos_brief: true,
+  tengu_kairos_brief_config: { enable_slash_command: true },
+  tengu_sedge_lantern: true,
+  tengu_onyx_plover: { enabled: true },
+  tengu_willow_mode: 'dialog',
+
+  // Kill switches kept true so local/external builds do not get remotely
+  // disabled for features that already exist in source.
+  tengu_turtle_carbon: true,
+  tengu_amber_stoat: true,
+  tengu_amber_flint: true,
+  tengu_slim_subagent_claudemd: true,
+  tengu_birch_trellis: true,
+  tengu_collage_kaleidoscope: true,
+  tengu_compact_cache_prefix: true,
+  tengu_kairos_cron_durable: true,
+  tengu_attribution_header: true,
+  tengu_slate_prism: true,
+}
+
+function getLocalGateDefault(feature: string): unknown | undefined {
+  if (process.env.CLAUDE_CODE_DISABLE_LOCAL_GATES) {
+    return undefined
+  }
+  return LOCAL_GATE_DEFAULTS[feature]
+}
+
+/**
  * Check if GrowthBook operations should be enabled
  */
 function isGrowthBookEnabled(): boolean {
@@ -683,12 +738,14 @@ async function getFeatureValueInternal<T>(
   }
 
   if (!isGrowthBookEnabled()) {
-    return defaultValue
+    const localDefault = getLocalGateDefault(feature)
+    return localDefault !== undefined ? (localDefault as T) : defaultValue
   }
 
   const growthBookClient = await initializeGrowthBook()
   if (!growthBookClient) {
-    return defaultValue
+    const localDefault = getLocalGateDefault(feature)
+    return localDefault !== undefined ? (localDefault as T) : defaultValue
   }
 
   // Use cached remote eval values if available (workaround for SDK bug)
@@ -746,7 +803,8 @@ export function getFeatureValue_CACHED_MAY_BE_STALE<T>(
   }
 
   if (!isGrowthBookEnabled()) {
-    return defaultValue
+    const localDefault = getLocalGateDefault(feature)
+    return localDefault !== undefined ? (localDefault as T) : defaultValue
   }
 
   // Log experiment exposure if data is available, otherwise defer until after init
@@ -768,9 +826,14 @@ export function getFeatureValue_CACHED_MAY_BE_STALE<T>(
   // Fall back to disk cache (survives across process restarts)
   try {
     const cached = getGlobalConfig().cachedGrowthBookFeatures?.[feature]
-    return cached !== undefined ? (cached as T) : defaultValue
+    if (cached !== undefined) {
+      return cached as T
+    }
+    const localDefault = getLocalGateDefault(feature)
+    return localDefault !== undefined ? (localDefault as T) : defaultValue
   } catch {
-    return defaultValue
+    const localDefault = getLocalGateDefault(feature)
+    return localDefault !== undefined ? (localDefault as T) : defaultValue
   }
 }
 
@@ -815,7 +878,8 @@ export function checkStatsigFeatureGate_CACHED_MAY_BE_STALE(
   }
 
   if (!isGrowthBookEnabled()) {
-    return false
+    const localDefault = getLocalGateDefault(gate)
+    return localDefault !== undefined ? Boolean(localDefault) : false
   }
 
   // Log experiment exposure if data is available, otherwise defer until after init
@@ -832,8 +896,12 @@ export function checkStatsigFeatureGate_CACHED_MAY_BE_STALE(
   if (gbCached !== undefined) {
     return Boolean(gbCached)
   }
-  // Fallback to Statsig cache for migration period
-  return config.cachedStatsigGates?.[gate] ?? false
+  const statsigCached = config.cachedStatsigGates?.[gate]
+  if (statsigCached !== undefined) {
+    return statsigCached
+  }
+  const localDefault = getLocalGateDefault(gate)
+  return localDefault !== undefined ? Boolean(localDefault) : false
 }
 
 /**
@@ -862,7 +930,8 @@ export async function checkSecurityRestrictionGate(
   }
 
   if (!isGrowthBookEnabled()) {
-    return false
+    const localDefault = getLocalGateDefault(gate)
+    return localDefault !== undefined ? Boolean(localDefault) : false
   }
 
   // If re-initialization is in progress, wait for it to complete
@@ -915,7 +984,8 @@ export async function checkGate_CACHED_OR_BLOCKING(
   }
 
   if (!isGrowthBookEnabled()) {
-    return false
+    const localDefault = getLocalGateDefault(gate)
+    return localDefault !== undefined ? Boolean(localDefault) : false
   }
 
   // Fast path: disk cache already says true — trust it

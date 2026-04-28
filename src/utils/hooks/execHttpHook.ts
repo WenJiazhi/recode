@@ -74,6 +74,7 @@ function urlMatchesPattern(url: string, pattern: string): boolean {
  * inject a second header into the request.
  */
 function sanitizeHeaderValue(value: string): string {
+  // biome-ignore lint/complexity/useRegexLiterals: control-character class stays in string form to avoid noControlCharactersInRegex false positives
   return value.replace(new RegExp(String.raw`[\r\n\u0000]`, 'g'), '')
 }
 

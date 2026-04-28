@@ -8,6 +8,7 @@ import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growt
 import { generateAwaySummary } from '../services/awaySummary.js'
 import type { Message } from '../types/message.js'
 import { createAwaySummaryMessage } from '../utils/messages.js'
+import { isAwaySummaryFeatureEnabled } from './awaySummaryFeatureEnabled.js'
 
 const BLUR_DELAY_MS = 5 * 60_000
 
@@ -27,7 +28,9 @@ function hasSummarySinceLastUserTurn(messages: readonly Message[]): boolean {
  * blurred for 5 minutes. Fires only when (a) 5min since blur, (b) no turn in
  * progress, and (c) no existing away_summary since the last user message.
  *
- * Focus state 'unknown' (terminal doesn't support DECSET 1004) is a no-op.
+ * For terminals that don't support DECSET 1004 focus events (CMD, PowerShell),
+ * falls back to idle-based detection: starts an idle timer after each turn
+ * ends, resets it when the user starts a new turn.
  */
 export function useAwaySummary(
   messages: readonly Message[],
@@ -51,7 +54,7 @@ export function useAwaySummary(
   )
 
   useEffect(() => {
-    if (!feature('AWAY_SUMMARY')) return
+    if (!isAwaySummaryFeatureEnabled()) return
     if (!gbEnabled) return
 
     function clearTimer(): void {
@@ -91,7 +94,10 @@ export function useAwaySummary(
 
     function onFocusChange(): void {
       const state = getTerminalFocusState()
-      if (state === 'blurred') {
+      if (state === 'blurred' || state === 'unknown') {
+        // For 'unknown' terminals (CMD, PowerShell), treat mount as
+        // potentially away — start idle timer. The isLoading effect
+        // below resets the timer on each turn transition.
         clearTimer()
         timerRef.current = setTimeout(onBlurTimerFire, BLUR_DELAY_MS)
       } else if (state === 'focused') {
@@ -99,7 +105,6 @@ export function useAwaySummary(
         abortInFlight()
         pendingRef.current = false
       }
-      // 'unknown' → no-op
     }
 
     const unsubscribe = subscribeTerminalFocus(onFocusChange)
@@ -115,11 +120,43 @@ export function useAwaySummary(
     }
   }, [gbEnabled, setMessages])
 
-  // Timer fired mid-turn → fire when turn ends (if still blurred)
+  // Timer fired mid-turn → fire when turn ends (if still away)
   useEffect(() => {
     if (isLoading) return
     if (!pendingRef.current) return
-    if (getTerminalFocusState() !== 'blurred') return
+    const state = getTerminalFocusState()
+    if (state !== 'blurred' && state !== 'unknown') return
     void generateRef.current?.()
   }, [isLoading])
+
+  // For 'unknown' terminals: use isLoading transitions as presence signal.
+  // User starts a turn → they're present, cancel idle timer.
+  // Turn ends → restart idle timer.
+  useEffect(() => {
+    if (getTerminalFocusState() !== 'unknown') return
+    if (!isAwaySummaryFeatureEnabled()) return
+    if (!gbEnabled) return
+
+    if (isLoading) {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current)
+        timerRef.current = null
+      }
+      abortRef.current?.abort()
+      abortRef.current = null
+      pendingRef.current = false
+    } else {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current)
+      }
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null
+        if (isLoadingRef.current) {
+          pendingRef.current = true
+          return
+        }
+        void generateRef.current?.()
+      }, BLUR_DELAY_MS)
+    }
+  }, [isLoading, gbEnabled])
 }

@@ -18,6 +18,7 @@ import { useAppState, useAppStateStore, useSetAppState } from '../state/AppState
 import type { Message } from '../types/message.js';
 import { getCwd } from '../utils/cwd.js';
 import { logForDebugging } from '../utils/debug.js';
+import { isEnvTruthy } from '../utils/envUtils.js';
 import { errorMessage } from '../utils/errors.js';
 import { enqueue } from '../utils/messageQueueManager.js';
 import { buildSystemInitMessage } from '../utils/messages/systemInit.js';
@@ -38,6 +39,8 @@ export const BRIDGE_FAILURE_DISMISS_MS = 10_000;
  * route).
  */
 const MAX_CONSECUTIVE_INIT_FAILURES = 3;
+const BRIDGE_MODE_ENABLED =
+  feature('BRIDGE_MODE') ? true : isEnvTruthy(process.env.FEATURE_BRIDGE_MODE);
 
 /**
  * Hook that initializes an always-on bridge connection in the background
@@ -76,17 +79,13 @@ export function useReplBridge(messages: Message[], setMessages: (action: React.S
   const {
     addNotification
   } = useNotifications();
-  const replBridgeEnabled = feature('BRIDGE_MODE') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const replBridgeEnabled = BRIDGE_MODE_ENABLED ?
   useAppState(s => s.replBridgeEnabled) : false;
-  const replBridgeConnected = feature('BRIDGE_MODE') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const replBridgeConnected = BRIDGE_MODE_ENABLED ?
   useAppState(s_0 => s_0.replBridgeConnected) : false;
-  const replBridgeOutboundOnly = feature('BRIDGE_MODE') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const replBridgeOutboundOnly = BRIDGE_MODE_ENABLED ?
   useAppState(s_1 => s_1.replBridgeOutboundOnly) : false;
-  const replBridgeInitialName = feature('BRIDGE_MODE') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const replBridgeInitialName = BRIDGE_MODE_ENABLED ?
   useAppState(s_2 => s_2.replBridgeInitialName) : undefined;
 
   // Initialize/teardown bridge when enabled state changes.
@@ -96,7 +95,7 @@ export function useReplBridge(messages: Message[], setMessages: (action: React.S
     // feature() check must use positive pattern for dead code elimination —
     // negative pattern (if (!feature(...)) return) does NOT eliminate
     // dynamic imports below.
-    if (feature('BRIDGE_MODE')) {
+    if (BRIDGE_MODE_ENABLED) {
       if (!replBridgeEnabled) return;
       const outboundOnly = replBridgeOutboundOnly;
       function notifyBridgeFailed(detail?: string): void {
@@ -686,7 +685,7 @@ export function useReplBridge(messages: Message[], setMessages: (action: React.S
   // so any messages that arrived before the bridge was ready get written.
   useEffect(() => {
     // Positive feature() guard — see first useEffect comment
-    if (feature('BRIDGE_MODE')) {
+    if (BRIDGE_MODE_ENABLED) {
       if (!replBridgeConnected) return;
       const handle_1 = handleRef.current;
       if (!handle_1) return;
@@ -714,7 +713,7 @@ export function useReplBridge(messages: Message[], setMessages: (action: React.S
     }
   }, [messages, replBridgeConnected]);
   const sendBridgeResult = useCallback(() => {
-    if (feature('BRIDGE_MODE')) {
+    if (BRIDGE_MODE_ENABLED) {
       handleRef.current?.sendResult();
     }
   }, []);

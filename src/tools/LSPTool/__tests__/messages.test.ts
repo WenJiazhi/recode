@@ -46,6 +46,43 @@ test('buildNoLspServerMessage includes matching plugin recommendations', () => {
   expect(message).toContain('vtsls@community')
 })
 
+test('buildNoLspServerMessage surfaces local config errors when available', () => {
+  const message = buildNoLspServerMessage(
+    '.ts',
+    'E:\\appdev\\claudecode-rebuild\\.recode\\lsp.json',
+    [],
+    {
+      localConfigError:
+        'Local LSP config validation failed for E:\\appdev\\claudecode-rebuild\\.recode\\lsp.json: missing command',
+    },
+  )
+
+  expect(message).toContain('Current local config error:')
+  expect(message).toContain('missing command')
+})
+
+test('buildNoLspServerMessage surfaces missing local server launchers when available', () => {
+  const message = buildNoLspServerMessage(
+    '.ts',
+    'E:\\appdev\\claudecode-rebuild\\.recode\\lsp.json',
+    [],
+    {
+      configuredLocalServers: [
+        {
+          name: 'local:tsserver',
+          commandLine:
+            'definitely-missing-lsp-launcher typescript-language-server --stdio',
+          launcherInstalled: false,
+        },
+      ],
+    },
+  )
+
+  expect(message).toContain('Current local server launcher missing:')
+  expect(message).toContain('local:tsserver')
+  expect(message).toContain('definitely-missing-lsp-launcher')
+})
+
 test('buildLspManagerUnavailableMessage includes failed error details', () => {
   const message = buildLspManagerUnavailableMessage(
     { status: 'failed', error: new Error('boom') },
@@ -56,4 +93,39 @@ test('buildLspManagerUnavailableMessage includes failed error details', () => {
   expect(message).toContain('/doctor')
   expect(message).toContain('.recode\\lsp.json')
   expect(message).toContain('.recode\\lsp.example.json')
+})
+
+test('buildLspManagerUnavailableMessage prefers diagnostic hints when available', () => {
+  const message = buildLspManagerUnavailableMessage(
+    { status: 'failed', error: new Error('boom') },
+    'E:\\appdev\\claudecode-rebuild\\.recode\\lsp.json',
+    {
+      localConfigError:
+        'Local LSP config validation failed for E:\\appdev\\claudecode-rebuild\\.recode\\lsp.json: missing command',
+    },
+  )
+
+  expect(message).toContain('Current local config error:')
+  expect(message).toContain('missing command')
+})
+
+test('buildLspManagerUnavailableMessage surfaces missing local server launchers when available', () => {
+  const message = buildLspManagerUnavailableMessage(
+    { status: 'failed', error: new Error('boom') },
+    'E:\\appdev\\claudecode-rebuild\\.recode\\lsp.json',
+    {
+      configuredLocalServers: [
+        {
+          name: 'local:tsserver',
+          commandLine:
+            'definitely-missing-lsp-launcher typescript-language-server --stdio',
+          launcherInstalled: false,
+        },
+      ],
+    },
+  )
+
+  expect(message).toContain('Current local server launcher missing:')
+  expect(message).toContain('local:tsserver')
+  expect(message).toContain('definitely-missing-lsp-launcher')
 })

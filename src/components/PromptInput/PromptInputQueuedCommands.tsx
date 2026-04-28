@@ -10,6 +10,7 @@ import type { QueuedCommand } from '../../types/textInputTypes.js';
 import { isQueuedCommandVisible } from '../../utils/messageQueueManager.js';
 import { createUserMessage, EMPTY_LOOKUPS, normalizeMessages } from '../../utils/messages.js';
 import { jsonParse } from '../../utils/slowOperations.js';
+import { isBriefFeatureEnabled } from '../../tools/BriefTool/briefFeatureEnabled.js';
 import { Message } from '../Message.js';
 const EMPTY_SET = new Set<string>();
 
@@ -75,8 +76,7 @@ function PromptInputQueuedCommandsImpl(): React.ReactNode {
   // already indent themselves). Gate mirrors the brief-spinner/message
   // check elsewhere — no teammate-view override needed since this
   // component early-returns when viewing a teammate.
-  const useBriefLayout = feature('KAIROS') || feature('KAIROS_BRIEF') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const useBriefLayout = isBriefFeatureEnabled() ?
   useAppState(s_0 => s_0.isBriefOnly) : false;
 
   // createUserMessage mints a fresh UUID per call; without memoization, streaming

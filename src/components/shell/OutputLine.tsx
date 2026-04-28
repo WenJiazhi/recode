@@ -30,10 +30,11 @@ export function tryFormatJson(line: string): string {
   }
 }
 const MAX_JSON_FORMAT_LENGTH = 10_000;
+// biome-ignore lint/complexity/useRegexLiterals: ANSI escape-sequence patterns stay in string form to avoid noControlCharactersInRegex false positives
 const UNDERLINE_ANSI_RE = new RegExp(
   String.raw`\u001B\[([0-9]+;)*4(;[0-9]+)*m|\u001B\[4(;[0-9]+)*m|\u001B\[([0-9]+;)*4m`,
   'g',
-)
+);
 export function tryJsonFormatContent(content: string): string {
   if (content.length > MAX_JSON_FORMAT_LENGTH) {
     return content;

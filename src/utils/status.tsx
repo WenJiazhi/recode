@@ -192,11 +192,18 @@ export async function buildInstallationHealthDiagnostics(): Promise<Diagnostic[]
   diagnostic.warnings.forEach(warning => {
     items.push(warning.issue);
   });
-  const lspSummary = `LSP: ${diagnostic.lspStatus.configuredServers} configured (${diagnostic.lspStatus.localConfiguredServers} local, ${diagnostic.lspStatus.pluginConfiguredServers} plugin), manager ${diagnostic.lspStatus.initializationStatus}, ${diagnostic.lspStatus.managerServers} instantiated`;
+  const lspSummary = `LSP: ${diagnostic.lspStatus.configuredServers} configured (${diagnostic.lspStatus.localConfiguredServers} local, ${diagnostic.lspStatus.pluginConfiguredServers} plugin), manager ${diagnostic.lspStatus.initializationStatus}, ${diagnostic.lspStatus.managerServers} instantiated (${diagnostic.lspStatus.runningServers} running)`;
   items.push(lspSummary);
+  if (diagnostic.lspStatus.localConfigPresent && !diagnostic.lspStatus.localConfigValid) {
+    items.push(`LSP local config invalid: ${diagnostic.lspStatus.localConfigError ?? diagnostic.lspStatus.localConfigPath}`);
+  }
   if (diagnostic.lspStatus.quickstartHint) {
     items.push(`LSP quickstart: ${diagnostic.lspStatus.quickstartHint}`);
   }
+  const missingLocalLaunchers = diagnostic.lspStatus.configuredLocalServers.filter(server => !server.launcherInstalled);
+  missingLocalLaunchers.forEach(server => {
+    items.push(`LSP local launcher missing: ${server.name} -> ${server.commandLine}`);
+  });
   if (diagnostic.lspStatus.initializationError) {
     items.push(`LSP initialization error: ${diagnostic.lspStatus.initializationError}`);
   }
@@ -254,7 +261,8 @@ export function buildAPIProviderProperties(): Property[] {
     const providerLabel = {
       bedrock: 'AWS Bedrock',
       vertex: 'Google Vertex AI',
-      foundry: 'Microsoft Foundry'
+      foundry: 'Microsoft Foundry',
+      openai: 'OpenAI-compatible API'
     }[apiProvider];
     properties.push({
       label: 'API provider',

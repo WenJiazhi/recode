@@ -4,6 +4,13 @@ import {
   getClaudeAIOAuthTokens,
   isAnthropicAuthEnabled,
 } from '../utils/auth.js'
+import { isEnvTruthy } from '../utils/envUtils.js'
+
+export function isVoiceFeatureEnabled(): boolean {
+  return feature('VOICE_MODE')
+    ? true
+    : isEnvTruthy(process.env.FEATURE_VOICE_MODE)
+}
 
 /**
  * Kill-switch check for voice mode. Returns true unless the
@@ -17,7 +24,7 @@ export function isVoiceGrowthBookEnabled(): boolean {
   // Positive ternary pattern — see docs/feature-gating.md.
   // Negative pattern (if (!feature(...)) return) does not eliminate
   // inline string literals from external builds.
-  return feature('VOICE_MODE')
+  return isVoiceFeatureEnabled()
     ? !getFeatureValue_CACHED_MAY_BE_STALE('tengu_amber_quartz_disabled', false)
     : false
 }

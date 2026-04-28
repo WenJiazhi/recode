@@ -26,6 +26,7 @@ import { executePreCompactHooks } from '../../utils/hooks.js'
 import { logError } from '../../utils/log.js'
 import { getMessagesAfterCompactBoundary } from '../../utils/messages.js'
 import { getUpgradeMessage } from '../../utils/model/contextWindowUpgradeCheck.js'
+import { isPromptCacheBreakFeatureEnabled } from '../../utils/promptCacheBreakFeatureEnabled.js'
 import {
   buildEffectiveSystemPrompt,
   type SystemPrompt,
@@ -64,7 +65,7 @@ export const call: LocalCommandCall = async (args, context) => {
         runPostCompactCleanup()
         // Reset cache read baseline so the post-compact drop isn't flagged
         // as a break. compactConversation does this internally; SM-compact doesn't.
-        if (feature('PROMPT_CACHE_BREAK_DETECTION')) {
+        if (isPromptCacheBreakFeatureEnabled()) {
           notifyCompaction(
             context.options.querySource ?? 'compact',
             context.agentId,

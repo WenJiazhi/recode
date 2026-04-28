@@ -28,6 +28,7 @@ import {
   getLinuxDistroInfo,
   detectVcs,
 } from '../../utils/platform.js'
+import { isChicagoFeatureEnabled } from '../../utils/computerUse/gates.js'
 import type { CoreUserData } from 'src/utils/user.js'
 import { getAgentContext } from '../../utils/agentContext.js'
 import type { EnvironmentMetadata } from '../../types/generated/events_mono/claude_code/v1/claude_code_internal_event.js'
@@ -127,7 +128,7 @@ export function isAnalyticsToolDetailsLoggingEnabled(
  */
 /* eslint-disable @typescript-eslint/no-require-imports */
 const BUILTIN_MCP_SERVER_NAMES: ReadonlySet<string> = new Set(
-  feature('CHICAGO_MCP')
+  isChicagoFeatureEnabled()
     ? [
         (
           require('../../utils/computerUse/common.js') as typeof import('../../utils/computerUse/common.js')

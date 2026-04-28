@@ -6,7 +6,6 @@ import {
   fsyncSync,
   openSync,
 } from 'fs'
-// biome-ignore lint: This file IS the cloneDeep wrapper - it must import the original
 import lodashCloneDeep from 'lodash-es/cloneDeep.js'
 import { addSlowOperation } from '../bootstrap/state.js'
 import { logForDebugging } from './debug.js'
@@ -72,13 +71,15 @@ export function callerFrame(stack: string | undefined): string {
  *
  * args[0] = TemplateStringsArray, args[1..n] = interpolated values
  */
-function buildDescription(args: IArguments): string {
-  const strings = args[0] as TemplateStringsArray
+function buildDescription(
+  strings: TemplateStringsArray,
+  values: readonly unknown[],
+): string {
   let result = ''
   for (let i = 0; i < strings.length; i++) {
     result += strings[i]
-    if (i + 1 < args.length) {
-      const v = args[i + 1]
+    if (i < values.length) {
+      const v = values[i]
       if (Array.isArray(v)) {
         result += `Array[${(v as unknown[]).length}]`
       } else if (v !== null && typeof v === 'object') {
@@ -95,12 +96,14 @@ function buildDescription(args: IArguments): string {
 
 class AntSlowLogger {
   startTime: number
-  args: IArguments
+  strings: TemplateStringsArray
+  values: readonly unknown[]
   err: Error
 
-  constructor(args: IArguments) {
+  constructor(strings: TemplateStringsArray, values: readonly unknown[]) {
     this.startTime = performance.now()
-    this.args = args
+    this.strings = strings
+    this.values = values
     // V8/JSC capture the stack at construction but defer the expensive string
     // formatting until .stack is read — so this stays off the fast path.
     this.err = new Error()
@@ -112,7 +115,7 @@ class AntSlowLogger {
       isLogging = true
       try {
         const description =
-          buildDescription(this.args) + callerFrame(this.err.stack)
+          buildDescription(this.strings, this.values) + callerFrame(this.err.stack)
         logForDebugging(
           `[SLOW OPERATION DETECTED] ${description} (${duration.toFixed(1)}ms)`,
         )
@@ -128,11 +131,10 @@ const NOOP_LOGGER: Disposable = { [Symbol.dispose]() {} }
 
 // Must be regular functions (not arrows) to access `arguments`
 function slowLoggingAnt(
-  _strings: TemplateStringsArray,
-  ..._values: unknown[]
+  strings: TemplateStringsArray,
+  ...values: unknown[]
 ): AntSlowLogger {
-  // eslint-disable-next-line prefer-rest-params
-  return new AntSlowLogger(arguments)
+  return new AntSlowLogger(strings, values)
 }
 
 function slowLoggingExternal(): Disposable {

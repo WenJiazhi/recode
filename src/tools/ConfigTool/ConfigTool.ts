@@ -11,6 +11,7 @@ import {
   getRemoteControlAtStartup,
   saveGlobalConfig,
 } from '../../utils/config.js'
+import { isEnvTruthy } from '../../utils/envUtils.js'
 import { errorMessage } from '../../utils/errors.js'
 import { lazySchema } from '../../utils/lazySchema.js'
 import { logError } from '../../utils/log.js'
@@ -32,6 +33,9 @@ import {
   renderToolUseMessage,
   renderToolUseRejectedMessage,
 } from './UI.js'
+
+const VOICE_MODE_ENABLED =
+  feature('VOICE_MODE') ? true : isEnvTruthy(process.env.FEATURE_VOICE_MODE)
 
 const inputSchema = lazySchema(() =>
   z.strictObject({
@@ -113,7 +117,7 @@ export const ConfigTool = buildTool({
     // Voice settings are registered at build-time (feature('VOICE_MODE')), but
     // must also be gated at runtime. When the kill-switch is on, treat
     // voiceEnabled as an unknown setting so no voice-specific strings leak.
-    if (feature('VOICE_MODE') && setting === 'voiceEnabled') {
+    if (VOICE_MODE_ENABLED && setting === 'voiceEnabled') {
       const { isVoiceGrowthBookEnabled } = await import(
         '../../voice/voiceModeEnabled.js'
       )
@@ -229,11 +233,7 @@ export const ConfigTool = buildTool({
     }
 
     // Pre-flight checks for voice mode
-    if (
-      feature('VOICE_MODE') &&
-      setting === 'voiceEnabled' &&
-      finalValue === true
-    ) {
+      if (VOICE_MODE_ENABLED && setting === 'voiceEnabled' && finalValue === true) {
       const { isVoiceModeEnabled } = await import(
         '../../voice/voiceModeEnabled.js'
       )
@@ -345,7 +345,7 @@ export const ConfigTool = buildTool({
       // 5a. Voice needs notifyChange so applySettingsChange resyncs
       // AppState.settings (useVoiceEnabled reads settings.voiceEnabled)
       // and the settings cache resets for the next /voice read.
-      if (feature('VOICE_MODE') && setting === 'voiceEnabled') {
+        if (VOICE_MODE_ENABLED && setting === 'voiceEnabled') {
         const { settingsChangeDetector } = await import(
           '../../utils/settings/changeDetector.js'
         )

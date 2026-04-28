@@ -140,6 +140,11 @@ export function applyPermissionUpdate(
       const ruleStrings = update.rules.map(rule =>
         permissionRuleValueToString(rule),
       )
+      const normalizedRulesToRemove = new Set(
+        ruleStrings.map(rule =>
+          permissionRuleValueToString(permissionRuleValueFromString(rule)),
+        ),
+      )
       logForDebugging(
         `Applying permission update: Removing ${update.rules.length} ${update.behavior} rule(s) from source '${update.destination}': ${jsonStringify(ruleStrings)}`,
       )
@@ -154,9 +159,11 @@ export function applyPermissionUpdate(
 
       // Filter out the rules to be removed
       const existingRules = context[ruleKind][update.destination] || []
-      const rulesToRemove = new Set(ruleStrings)
       const filteredRules = existingRules.filter(
-        rule => !rulesToRemove.has(rule),
+        rule =>
+          !normalizedRulesToRemove.has(
+            permissionRuleValueToString(permissionRuleValueFromString(rule)),
+          ),
       )
 
       return {

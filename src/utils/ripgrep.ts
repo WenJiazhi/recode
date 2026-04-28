@@ -16,11 +16,7 @@ import { getPlatform } from './platform.js'
 import { countCharInString } from './stringUtils.js'
 
 const __filename = fileURLToPath(import.meta.url)
-// we use node:path.join instead of node:url.resolve because the former doesn't encode spaces
-const __dirname = path.join(
-  __filename,
-  process.env.NODE_ENV === 'test' ? '../../../' : '../',
-)
+const __dirname = path.dirname(__filename)
 
 type RipgrepConfig = {
   mode: 'system' | 'builtin' | 'embedded'
@@ -60,9 +56,16 @@ const getRipgrepConfig = memoize((): RipgrepConfig => {
     process.platform === 'win32'
       ? path.join(`${process.arch}-win32`, 'rg.exe')
       : path.join(`${process.arch}-${process.platform}`, 'rg')
-  const localVendorRoot = path.resolve(__dirname, 'vendor', 'ripgrep')
+  const sourceLayoutRoot = path.resolve(__dirname, '..', '..')
+  const distLayoutRoot = path.resolve(__dirname, '..')
+  const packageRoot =
+    existsSync(path.join(sourceLayoutRoot, 'node_modules')) ||
+    existsSync(path.join(sourceLayoutRoot, 'vendor'))
+      ? sourceLayoutRoot
+      : distLayoutRoot
+  const localVendorRoot = path.resolve(packageRoot, 'vendor', 'ripgrep')
   const sdkVendorRoot = path.resolve(
-    process.cwd(),
+    packageRoot,
     'node_modules',
     '@anthropic-ai',
     'claude-agent-sdk',

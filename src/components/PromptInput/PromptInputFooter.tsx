@@ -15,6 +15,7 @@ import type { ToolPermissionContext } from '../../Tool.js';
 import type { Message } from '../../types/message.js';
 import type { PromptInputMode, VimMode } from '../../types/textInputTypes.js';
 import type { AutoUpdaterResult } from '../../utils/autoUpdater.js';
+import { isEnvTruthy } from '../../utils/envUtils.js';
 import { isFullscreenEnvEnabled } from '../../utils/fullscreen.js';
 import { isUndercover } from '../../utils/undercover.js';
 import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAgentStatus.js';
@@ -23,6 +24,10 @@ import { Notifications } from './Notifications.js';
 import { PromptInputFooterLeftSide } from './PromptInputFooterLeftSide.js';
 import { PromptInputFooterSuggestions, type SuggestionItem } from './PromptInputFooterSuggestions.js';
 import { PromptInputHelpMenu } from './PromptInputHelpMenu.js';
+
+const BRIDGE_MODE_ENABLED =
+  feature('BRIDGE_MODE') ? true : isEnvTruthy(process.env.FEATURE_BRIDGE_MODE);
+
 type Props = {
   apiKeyStatus: VerificationStatus;
   debug: boolean;
@@ -157,17 +162,12 @@ type BridgeStatusProps = {
 function BridgeStatusIndicator({
   bridgeSelected
 }: BridgeStatusProps): React.ReactNode {
-  if (!feature('BRIDGE_MODE')) return null;
+  if (!BRIDGE_MODE_ENABLED) return null;
 
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
   const enabled = useAppState(s => s.replBridgeEnabled);
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
   const connected = useAppState(s_0 => s_0.replBridgeConnected);
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
   const sessionActive = useAppState(s_1 => s_1.replBridgeSessionActive);
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
   const reconnecting = useAppState(s_2 => s_2.replBridgeReconnecting);
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
   const explicit = useAppState(s_3 => s_3.replBridgeExplicit);
 
   // Failed state is surfaced via notification (useReplBridge), not a footer pill.

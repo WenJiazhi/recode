@@ -2,6 +2,7 @@
 // Runtime polyfill for bun:bundle (build-time macros)
 import { homedir } from "os";
 import { join } from "path";
+import { isEnvTruthy } from "../utils/envUtils.js";
 
 const feature = (_name: string) => false;
 if (typeof globalThis.MACRO === "undefined") {
@@ -30,6 +31,55 @@ if (!process.env.CLAUDE_CODE_PLUGIN_CACHE_DIR) {
         "plugins",
     );
 }
+
+// Keep ultraplan available in source-runtime external builds. CCB enables this
+// via build features; our source-first launcher uses an env default so the
+// existing source implementation stays wired without opening unrelated gates.
+process.env.FEATURE_ULTRAPLAN ??= "1";
+// Keep voice mode available in source-runtime external builds. CCB enables
+// this via build features; our source-first launcher mirrors that with an
+// env default so the existing source implementation stays wired.
+process.env.FEATURE_VOICE_MODE ??= "1";
+// Keep brief mode available in source-runtime external builds. CCB enables
+// this via build features; our source-first launcher mirrors that with an
+// env default so the existing source implementation stays wired.
+process.env.FEATURE_KAIROS_BRIEF ??= "1";
+// Keep away-summary available in source-runtime external builds. CCB enables
+// this via build features; our source-first launcher mirrors that with an
+// env default so the existing source implementation stays wired.
+process.env.FEATURE_AWAY_SUMMARY ??= "1";
+// Keep token-budget available in source-runtime external builds. CCB enables
+// this via build features; our source-first launcher mirrors that with an
+// env default so the existing source implementation stays wired.
+process.env.FEATURE_TOKEN_BUDGET ??= "1";
+// Keep prompt-cache-break detection available in source-runtime external
+// builds. CCB enables this via build features; our source-first launcher
+// mirrors that with an env default so the existing source implementation stays
+// wired.
+process.env.FEATURE_PROMPT_CACHE_BREAK_DETECTION ??= "1";
+// Keep verification-agent available in source-runtime external builds. CCB
+// enables this via build features; our source-first launcher mirrors that with
+// an env default so the existing source implementation stays wired.
+process.env.FEATURE_VERIFICATION_AGENT ??= "1";
+// Keep agent triggers and built-in explore/plan agents available in
+// source-runtime external builds. CCB enables these via build features; our
+// source-first launcher mirrors that with env defaults so the existing source
+// implementations stay wired.
+process.env.FEATURE_AGENT_TRIGGERS ??= "1";
+process.env.FEATURE_AGENT_TRIGGERS_REMOTE ??= "1";
+process.env.FEATURE_BUILTIN_EXPLORE_PLAN_AGENTS ??= "1";
+process.env.FEATURE_EXTRACT_MEMORIES ??= "1";
+process.env.FEATURE_LODESTONE ??= "1";
+process.env.FEATURE_SHOT_STATS ??= "1";
+// Keep CHICAGO_MCP available in source-runtime external builds. CCB enables
+// this via build features; our source-first launcher mirrors that with an
+// env default so the existing source implementation stays wired.
+process.env.FEATURE_CHICAGO_MCP ??= "1";
+// Keep bridge mode available in source-runtime external builds. CCB leaves
+// this gated in packaged builds; for recode the user explicitly wants the
+// command surface open by default, so mirror the same source-first env default
+// pattern used for the other merged features.
+process.env.FEATURE_BRIDGE_MODE ??= "1";
 
 // Bugfix for corepack auto-pinning, which adds yarnpkg to peoples' package.jsons
 // eslint-disable-next-line custom-rules/no-top-level-side-effects
@@ -80,7 +130,6 @@ async function main(): Promise<void> {
         (args[0] === "--version" || args[0] === "-v" || args[0] === "-V")
     ) {
         // MACRO.VERSION is inlined at build time
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(`${MACRO.VERSION} (recode)`);
         return;
     }
@@ -107,7 +156,6 @@ async function main(): Promise<void> {
             (modelIdx !== -1 && args[modelIdx + 1]) || getMainLoopModel();
         const { getSystemPrompt } = await import("../constants/prompts.js");
         const prompt = await getSystemPrompt([], model);
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(prompt.join("\n"));
         return;
     }
@@ -124,7 +172,7 @@ async function main(): Promise<void> {
         await runChromeNativeHost();
         return;
     } else if (
-        feature("CHICAGO_MCP") &&
+        (feature("CHICAGO_MCP") || isEnvTruthy(process.env.FEATURE_CHICAGO_MCP)) &&
         process.argv[2] === "--computer-use-mcp"
     ) {
         profileCheckpoint("cli_computer_use_mcp_path");
@@ -147,10 +195,11 @@ async function main(): Promise<void> {
 
     // Fast-path for `claude remote-control` (also accepts legacy `claude remote` / `claude sync` / `claude bridge`):
     // serve local machine as bridge environment.
-    // feature() must stay inline for build-time dead code elimination;
-    // isBridgeEnabled() checks the runtime GrowthBook gate.
+    // Bridge is not default-enabled for external builds, but source-first runs
+    // should still honor an explicit FEATURE_BRIDGE_MODE opt-in so local
+    // testing can mirror a feature-enabled build.
     if (
-        feature("BRIDGE_MODE") &&
+        (feature("BRIDGE_MODE") || isEnvTruthy(process.env.FEATURE_BRIDGE_MODE)) &&
         (args[0] === "remote-control" ||
             args[0] === "rc" ||
             args[0] === "remote" ||

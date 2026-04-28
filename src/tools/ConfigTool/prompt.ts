@@ -1,10 +1,14 @@
 import { feature } from 'bun:bundle'
 import { getModelOptions } from '../../utils/model/modelOptions.js'
+import { isEnvTruthy } from '../../utils/envUtils.js'
 import { isVoiceGrowthBookEnabled } from '../../voice/voiceModeEnabled.js'
 import {
   getOptionsForSetting,
   SUPPORTED_SETTINGS,
 } from './supportedSettings.js'
+
+const VOICE_MODE_ENABLED =
+  feature('VOICE_MODE') ? true : isEnvTruthy(process.env.FEATURE_VOICE_MODE)
 
 export const DESCRIPTION = 'Get or set Claude Code configuration settings.'
 
@@ -21,7 +25,7 @@ export function generatePrompt(): string {
     // Voice settings are registered at build-time but gated by GrowthBook
     // at runtime. Hide from model prompt when the kill-switch is on.
     if (
-      feature('VOICE_MODE') &&
+      VOICE_MODE_ENABLED &&
       key === 'voiceEnabled' &&
       !isVoiceGrowthBookEnabled()
     )

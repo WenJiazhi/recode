@@ -55,6 +55,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "openai": "^6.33.0",
     "@alcalzone/ansi-tokenize": "^0.3.0",
     "@ant/claude-for-chrome-mcp": "workspace:*",
     "@ant/computer-use-input": "workspace:*",

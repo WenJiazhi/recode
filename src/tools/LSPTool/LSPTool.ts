@@ -21,6 +21,7 @@ import {
 import type { ValidationResult } from '../../Tool.js'
 import { buildTool, type ToolDef } from '../../Tool.js'
 import { uniq } from '../../utils/array.js'
+import { getLspDiagnosticSummary } from '../../utils/doctorDiagnostic.js'
 import { getCwd } from '../../utils/cwd.js'
 import { logForDebugging } from '../../utils/debug.js'
 import { isENOENT, toError } from '../../utils/errors.js'
@@ -240,6 +241,7 @@ export const LSPTool = buildTool({
     // Get the LSP server manager
     const manager = getLspServerManager()
     if (!manager) {
+      const diagnostics = await getLspDiagnosticSummary()
       // Log this system-level failure for tracking
       logError(
         new Error('LSP server manager not initialized when tool was called'),
@@ -250,6 +252,7 @@ export const LSPTool = buildTool({
         result: buildLspManagerUnavailableMessage(
           getInitializationStatus(),
           path.join(getCwd(), '.recode', 'lsp.json'),
+          diagnostics,
         ),
         filePath: input.filePath,
       }
@@ -309,6 +312,7 @@ export const LSPTool = buildTool({
             path.extname(absolutePath),
             path.join(getCwd(), '.recode', 'lsp.json'),
             matchingPlugins,
+            await getLspDiagnosticSummary(),
           ),
           filePath: input.filePath,
         }

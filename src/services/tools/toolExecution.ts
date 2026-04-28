@@ -589,10 +589,19 @@ export function buildSchemaNotSentHint(
   if (!isDeferredTool(tool)) return null
   const discovered = extractDiscoveredToolNames(messages)
   if (discovered.has(tool.name)) return null
+  const toolDisplayName = tool.userFacingName
+    ? tool.userFacingName(undefined)
+    : tool.name
+  const toolSearchCall = `${TOOL_SEARCH_TOOL_NAME}("select:${tool.name}")`
+  const commonTaskToolsCall = `${TOOL_SEARCH_TOOL_NAME}("select:TaskGet,TaskCreate,TaskUpdate,TaskList")`
+  const taskToolsHint = tool.name.startsWith('Task')
+    ? ` If you're working with task tools, you can preload the common task set with ${commonTaskToolsCall}.`
+    : ''
   return (
-    `\n\nThis tool's schema was not sent to the API — it was not in the discovered-tool set derived from message history. ` +
-    `Without the schema in your prompt, typed parameters (arrays, numbers, booleans) get emitted as strings and the client-side parser rejects them. ` +
-    `Load the tool first: call ${TOOL_SEARCH_TOOL_NAME} with query "select:${tool.name}", then retry this call.`
+    `\n\nTool "${toolDisplayName}" is deferred-loading and was not discovered in this conversation, so its schema was not sent to the API. ` +
+    `For OpenAI-compatible models, discover it first with ${toolSearchCall}, then retry the ${toolDisplayName} call.` +
+    ` Typed parameters are more likely to be emitted as strings until the schema is loaded. ` +
+    `Use camelCase parameter names when you retry.${taskToolsHint}`
   )
 }
 

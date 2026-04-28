@@ -62,13 +62,13 @@ const reviewNonInteractive: Command = {
   load: async () => ({ call: reviewNonInteractiveCall }),
 }
 
-// /ultrareview is the ONLY entry point to the remote bughunter path —
+// /ultrareview is the ONLY entry point to the remote bughunter path 鈥?
 // /review stays purely local. local-jsx type renders the overage permission
 // dialog when free reviews are exhausted.
 const ultrareview: Command = {
   type: 'local-jsx',
   name: 'ultrareview',
-  description: `~10–20 min · Finds and verifies bugs in your branch. Runs in Claude Code on the web. See ${CCR_TERMS_URL}`,
+  description: `~10-20 min - Finds and verifies bugs in your branch. Runs in Claude Code on the web. See ${CCR_TERMS_URL}`,
   isEnabled: () => isUltrareviewEnabled(),
   load: () => import('./review/ultrareviewCommand.js'),
 }

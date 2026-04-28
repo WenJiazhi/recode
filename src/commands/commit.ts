@@ -1,4 +1,5 @@
-import type { Command } from '../types/command.js'
+import { getIsNonInteractiveSession } from '../bootstrap/state.js'
+import type { Command, LocalCommandCall } from '../types/command.js'
 import { getAttributionTexts } from '../utils/attribution.js'
 import { executeShellCommandsInPrompt } from '../utils/promptShellExecution.js'
 import { getUndercoverInstructions, isUndercover } from '../utils/undercover.js'
@@ -87,6 +88,24 @@ const command = {
 
     return [{ type: 'text', text: finalContent }]
   },
+} satisfies Command
+
+const nonInteractiveCall: LocalCommandCall = async () => ({
+  type: 'text',
+  value:
+    '/commit is not available in non-interactive mode. Run it inside the interactive recode session.',
+})
+
+export const commitNonInteractive = {
+  type: 'local',
+  name: 'commit',
+  supportsNonInteractive: true,
+  description: 'Create a git commit',
+  isEnabled: () => getIsNonInteractiveSession(),
+  get isHidden() {
+    return !getIsNonInteractiveSession()
+  },
+  load: async () => ({ call: nonInteractiveCall }),
 } satisfies Command
 
 export default command

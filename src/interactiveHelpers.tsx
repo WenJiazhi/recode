@@ -24,6 +24,7 @@ import { updateDeepLinkTerminalPreference } from './utils/deepLink/terminalPrefe
 import { isEnvTruthy, isRunningOnHomespace } from './utils/envUtils.js';
 import { type FpsMetrics, FpsTracker } from './utils/fpsTracker.js';
 import { updateGithubRepoPathMapping } from './utils/githubRepoPathMapping.js';
+import { isLodestoneFeatureEnabled } from './utils/lodestoneFeatureEnabled.js';
 import { applyConfigEnvironmentVariables } from './utils/managedEnv.js';
 import type { PermissionMode } from './utils/permissions/PermissionMode.js';
 import { getBaseRenderOptions } from './utils/renderOptions.js';
@@ -173,7 +174,7 @@ export async function showSetupScreens(root: Root, permissionMode: PermissionMod
   // Track current repo path for teleport directory switching (fire-and-forget)
   // This must happen AFTER trust to prevent untrusted directories from poisoning the mapping
   void updateGithubRepoPathMapping();
-  if (feature('LODESTONE')) {
+  if (isLodestoneFeatureEnabled()) {
     updateDeepLinkTerminalPreference();
   }
 

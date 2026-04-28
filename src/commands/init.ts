@@ -1,6 +1,8 @@
 import { feature } from 'bun:bundle'
+import { getIsNonInteractiveSession } from '../bootstrap/state.js'
 import type { Command } from '../commands.js'
 import { maybeMarkProjectOnboardingComplete } from '../projectOnboardingState.js'
+import type { LocalCommandCall } from '../types/command.js'
 import { isEnvTruthy } from '../utils/envUtils.js'
 
 const OLD_INIT_PROMPT = `Please analyze this codebase and create a CLAUDE.md file, which will be given to future instances of Claude Code to operate in this repository.
@@ -251,6 +253,24 @@ const command = {
       },
     ]
   },
+} satisfies Command
+
+const initNonInteractiveCall: LocalCommandCall = async () => ({
+  type: 'text',
+  value:
+    '/init is not available in non-interactive mode. Run it inside the interactive recode session.',
+})
+
+export const initNonInteractive = {
+  type: 'local',
+  name: 'init',
+  supportsNonInteractive: true,
+  description: 'Initialize a new CLAUDE.md file with codebase documentation',
+  isEnabled: () => getIsNonInteractiveSession(),
+  get isHidden() {
+    return !getIsNonInteractiveSession()
+  },
+  load: async () => ({ call: initNonInteractiveCall }),
 } satisfies Command
 
 export default command

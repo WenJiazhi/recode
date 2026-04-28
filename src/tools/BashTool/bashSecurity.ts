@@ -26,7 +26,7 @@ const COMMAND_SUBSTITUTION_PATTERNS = [
     message: 'Zsh equals expansion (=cmd)',
   },
   { pattern: /\$\(/, message: '$() command substitution' },
-  { pattern: /\$\{/, message: '${} parameter substitution' },
+  { pattern: /\$\{/, message: `\${} parameter substitution` },
   { pattern: /\$\[/, message: '$[] legacy arithmetic expansion' },
   { pattern: /~\[/, message: 'Zsh-style parameter expansion' },
   { pattern: /\(e:/, message: 'Zsh-style glob qualifiers' },
@@ -2245,6 +2245,7 @@ function validateZshDangerousCommands(
 // validators. Bash silently drops null bytes and ignores most control chars,
 // so an attacker can use them to slip metacharacters past our checks while
 // bash still executes them (e.g., "echo safe\x00; rm -rf /").
+// biome-ignore lint/complexity/useRegexLiterals: control-character class stays in string form to avoid noControlCharactersInRegex false positives
 const CONTROL_CHAR_RE = new RegExp(
   String.raw`[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]`,
 )

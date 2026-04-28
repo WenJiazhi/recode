@@ -1,7 +1,9 @@
 import { readFile, realpath } from 'fs/promises'
 import { homedir } from 'os'
 import { delimiter, join, posix, win32 } from 'path'
+import { z } from 'zod/v4'
 import { checkGlobalInstallPermissions } from './autoUpdater.js'
+import { isBinaryInstalled } from './binaryCheck.js'
 import { isInBundledMode } from './bundledMode.js'
 import {
   formatAutoUpdaterDisabledReason,
@@ -37,9 +39,11 @@ import {
   getLspServerManager,
 } from '../services/lsp/manager.js'
 import {
+  inspectLocalLspConfig,
   LOCAL_LSP_CONFIG_RELATIVE_PATH,
   LOCAL_LSP_EXAMPLE_CONFIG_RELATIVE_PATH,
 } from '../services/lsp/localConfig.js'
+import { LspServerConfigSchema } from './plugins/schemas.js'
 import { SandboxManager } from './sandbox/sandbox-adapter.js'
 import { getManagedFilePath } from './settings/managedPath.js'
 import { CUSTOMIZATION_SURFACES } from './settings/types.js'
@@ -81,6 +85,8 @@ export type DiagnosticInfo = {
   lspStatus: {
     localConfigPath: string
     localConfigPresent: boolean
+    localConfigValid: boolean
+    localConfigError?: string
     localExamplePath: string
     localExamplePresent: boolean
     configuredServers: number
@@ -89,8 +95,20 @@ export type DiagnosticInfo = {
     initializationStatus: 'not-started' | 'pending' | 'success' | 'failed'
     initializationError?: string
     managerServers: number
-    activeServers: number
+    runningServers: number
+    startingServers: number
+    stoppedServers: number
     errorServers: number
+    exampleServers: Array<{
+      name: string
+      commandLine: string
+      launcherInstalled: boolean
+    }>
+    configuredLocalServers: Array<{
+      name: string
+      commandLine: string
+      launcherInstalled: boolean
+    }>
     quickstartHint?: string
   }
   worktreeStatus: {
@@ -103,17 +121,14 @@ export type DiagnosticInfo = {
   }
 }
 
-async function getLspDiagnosticSummary(): Promise<DiagnosticInfo['lspStatus']> {
-  const localConfigPath = join(getCwd(), LOCAL_LSP_CONFIG_RELATIVE_PATH)
+export async function getLspDiagnosticSummary(): Promise<
+  DiagnosticInfo['lspStatus']
+> {
+  const localConfigInspection = await inspectLocalLspConfig()
+  const localConfigPath = localConfigInspection.configPath
   const localExamplePath = join(getCwd(), LOCAL_LSP_EXAMPLE_CONFIG_RELATIVE_PATH)
 
-  let localConfigPresent = false
-  try {
-    await readFile(localConfigPath, 'utf-8')
-    localConfigPresent = true
-  } catch {
-    localConfigPresent = false
-  }
+  const localConfigPresent = localConfigInspection.present
 
   let localExamplePresent = false
   try {
@@ -121,6 +136,43 @@ async function getLspDiagnosticSummary(): Promise<DiagnosticInfo['lspStatus']> {
     localExamplePresent = true
   } catch {
     localExamplePresent = false
+  }
+
+  const exampleServers: DiagnosticInfo['lspStatus']['exampleServers'] = []
+  const configuredLocalServers: DiagnosticInfo['lspStatus']['configuredLocalServers'] =
+    []
+  if (localExamplePresent) {
+    try {
+      const exampleContent = await readFile(localExamplePath, 'utf-8')
+      const parsed = jsonParse(exampleContent)
+      const result = z
+        .record(z.string(), LspServerConfigSchema())
+        .safeParse(parsed)
+
+      if (result.success) {
+        for (const [name, config] of Object.entries(result.data)) {
+          const args = Array.isArray(config.args) ? config.args : []
+          exampleServers.push({
+            name,
+            commandLine: [config.command, ...args].join(' ').trim(),
+            launcherInstalled: await isBinaryInstalled(config.command),
+          })
+        }
+      }
+    } catch {
+      // Best-effort diagnostics only; keep example server list empty on parse errors.
+    }
+  }
+
+  if (localConfigInspection.valid) {
+    for (const [name, config] of Object.entries(localConfigInspection.servers)) {
+      const args = Array.isArray(config.args) ? config.args : []
+      configuredLocalServers.push({
+        name,
+        commandLine: [config.command, ...args].join(' ').trim(),
+        launcherInstalled: await isBinaryInstalled(config.command),
+      })
+    }
   }
 
   let configuredServers = 0
@@ -147,8 +199,14 @@ async function getLspDiagnosticSummary(): Promise<DiagnosticInfo['lspStatus']> {
   const manager = getLspServerManager()
   const managerServers = manager?.getAllServers() ?? new Map()
   const managerServerList = Array.from(managerServers.values())
-  const activeServers = managerServerList.filter(
-    server => server.state !== 'error',
+  const runningServers = managerServerList.filter(
+    server => server.state === 'running',
+  ).length
+  const startingServers = managerServerList.filter(
+    server => server.state === 'starting' || server.state === 'stopping',
+  ).length
+  const stoppedServers = managerServerList.filter(
+    server => server.state === 'stopped',
   ).length
   const errorServers = managerServerList.filter(
     server => server.state === 'error',
@@ -161,6 +219,8 @@ async function getLspDiagnosticSummary(): Promise<DiagnosticInfo['lspStatus']> {
   return {
     localConfigPath,
     localConfigPresent,
+    localConfigValid: localConfigInspection.valid,
+    localConfigError: localConfigInspection.error,
     localExamplePath,
     localExamplePresent,
     configuredServers,
@@ -169,8 +229,12 @@ async function getLspDiagnosticSummary(): Promise<DiagnosticInfo['lspStatus']> {
     initializationStatus,
     initializationError,
     managerServers: managerServerList.length,
-    activeServers,
+    runningServers,
+    startingServers,
+    stoppedServers,
     errorServers,
+    exampleServers,
+    configuredLocalServers,
     quickstartHint,
   }
 }

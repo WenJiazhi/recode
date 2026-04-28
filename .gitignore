@@ -9,6 +9,8 @@ coverage
 *.suo
 *.lock
 .codex-loop/
+.workflow/
+.tmp-*
 .recode/local-provider.json
 .recode/api-key.txt
 Portable/

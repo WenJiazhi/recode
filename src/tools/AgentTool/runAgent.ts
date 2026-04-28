@@ -58,6 +58,7 @@ import { executeSubagentStartHooks } from '../../utils/hooks.js'
 import { createUserMessage } from '../../utils/messages.js'
 import { getAgentModel } from '../../utils/model/agent.js'
 import type { ModelAlias } from '../../utils/model/aliases.js'
+import { isPromptCacheBreakFeatureEnabled } from '../../utils/promptCacheBreakFeatureEnabled.js'
 import {
   clearAgentTranscriptSubdir,
   recordSidechainTranscript,
@@ -821,7 +822,7 @@ export async function* runAgent({
       clearSessionHooks(rootSetAppState, agentId)
     }
     // Clean up prompt cache tracking state for this agent
-    if (feature('PROMPT_CACHE_BREAK_DETECTION')) {
+    if (isPromptCacheBreakFeatureEnabled()) {
       cleanupAgentTracking(agentId)
     }
     // Release cloned file state cache memory

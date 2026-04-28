@@ -27,6 +27,8 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
 } from 'src/services/analytics/index.js'
 import { getFeatureValue_CACHED_MAY_BE_STALE } from 'src/services/analytics/growthbook.js'
+import { isAgentTriggersFeatureEnabled } from 'src/utils/agentTriggersFeatureEnabled.js'
+import { isExtractMemoriesFeatureEnabled } from 'src/utils/extractMemoriesFeatureEnabled.js'
 import { logForDebugging } from 'src/utils/debug.js'
 import {
   logForDiagnosticsNoPII,
@@ -363,16 +365,16 @@ const proactiveModule =
   feature('PROACTIVE') || feature('KAIROS')
     ? (require('../proactive/index.js') as typeof import('../proactive/index.js'))
     : null
-const cronSchedulerModule = feature('AGENT_TRIGGERS')
+const cronSchedulerModule = isAgentTriggersFeatureEnabled()
   ? (require('../utils/cronScheduler.js') as typeof import('../utils/cronScheduler.js'))
   : null
-const cronJitterConfigModule = feature('AGENT_TRIGGERS')
+const cronJitterConfigModule = isAgentTriggersFeatureEnabled()
   ? (require('../utils/cronJitterConfig.js') as typeof import('../utils/cronJitterConfig.js'))
   : null
-const cronGate = feature('AGENT_TRIGGERS')
+const cronGate = isAgentTriggersFeatureEnabled()
   ? (require('../tools/ScheduleCronTool/prompt.js') as typeof import('../tools/ScheduleCronTool/prompt.js'))
   : null
-const extractMemoriesModule = feature('EXTRACT_MEMORIES')
+const extractMemoriesModule = isExtractMemoriesFeatureEnabled()
   ? (require('../services/extractMemories/extractMemories.js') as typeof import('../services/extractMemories/extractMemories.js'))
   : null
 /* eslint-enable @typescript-eslint/no-require-imports */
@@ -970,7 +972,7 @@ export async function runHeadless(
   // delays process exit so gracefulShutdownSync's 5s failsafe doesn't kill
   // the forked agent mid-flight. Gated by isExtractModeActive so the
   // tengu_slate_thimble flag controls non-interactive extraction end-to-end.
-  if (feature('EXTRACT_MEMORIES') && isExtractModeActive()) {
+  if (isExtractMemoriesFeatureEnabled() && isExtractModeActive()) {
     await extractMemoriesModule!.drainPendingExtraction()
   }
 
@@ -2712,7 +2714,7 @@ function runHeadlessStreaming(
   let cronScheduler: import('../utils/cronScheduler.js').CronScheduler | null =
     null
   if (
-    feature('AGENT_TRIGGERS') &&
+    isAgentTriggersFeatureEnabled() &&
     cronSchedulerModule &&
     cronGate?.isKairosCronEnabled()
   ) {

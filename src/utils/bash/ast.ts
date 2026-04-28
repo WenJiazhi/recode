@@ -250,6 +250,7 @@ const BRACE_EXPANSION_RE = /\{[^{}\s]*(,|\.\.)[^{}\s]*\}/
  * default IFS does not include CR, so tree-sitter and bash disagree on
  * word boundaries.
  */
+// biome-ignore lint/complexity/useRegexLiterals: control-character class stays in string form to avoid noControlCharactersInRegex false positives
 const CONTROL_CHAR_RE = new RegExp(
   String.raw`[\u0000-\u0008\u000B-\u001F\u007F]`,
 )
@@ -1898,7 +1899,7 @@ function walkVariableAssignment(
       return {
         kind: 'too-complex',
         reason:
-          'PS4 value outside safe charset — only ${VAR} refs and [A-Za-z0-9 _+:.=/[]-] allowed',
+          `PS4 value outside safe charset — only \${VAR} refs and [A-Za-z0-9 _+:.=/[]-] allowed`,
         nodeType: 'variable_assignment',
       }
     }

@@ -1,8 +1,10 @@
 import { feature } from 'bun:bundle'
 import { z } from 'zod/v4'
 import { SandboxSettingsSchema } from '../../entrypoints/sandboxTypes.js'
+import { isBriefFeatureEnabled } from '../../tools/BriefTool/briefFeatureEnabled.js'
 import { isEnvTruthy } from '../envUtils.js'
 import { lazySchema } from '../lazySchema.js'
+import { isLodestoneFeatureEnabled } from '../lodestoneFeatureEnabled.js'
 import {
   EXTERNAL_PERMISSION_MODES,
   PERMISSION_MODES,
@@ -10,6 +12,9 @@ import {
 import { MarketplaceSourceSchema } from '../plugins/schemas.js'
 import { CLAUDE_CODE_SETTINGS_SCHEMA_URL } from './constants.js'
 import { PermissionRuleSchema } from './permissionValidation.js'
+
+const VOICE_MODE_ENABLED =
+  feature('VOICE_MODE') ? true : isEnvTruthy(process.env.FEATURE_VOICE_MODE)
 
 // Re-export hook schemas and types from centralized location for backward compatibility
 export {
@@ -869,7 +874,7 @@ export const SettingsSchema = lazySchema(() =>
         .enum(['latest', 'stable'])
         .optional()
         .describe('Release channel for auto-updates (latest or stable)'),
-      ...(feature('LODESTONE')
+      ...(isLodestoneFeatureEnabled()
         ? {
             disableDeepLinkRegistration: z
               .enum(['disable'])
@@ -925,7 +930,7 @@ export const SettingsSchema = lazySchema(() =>
               ),
           }
         : {}),
-      ...(feature('VOICE_MODE')
+      ...(VOICE_MODE_ENABLED
         ? {
             voiceEnabled: z
               .boolean()
@@ -983,7 +988,7 @@ export const SettingsSchema = lazySchema(() =>
             'plugins may push inbound messages. Undefined falls back to the default. ' +
             'Requires channelsEnabled: true.',
         ),
-      ...(feature('KAIROS') || feature('KAIROS_BRIEF')
+      ...(isBriefFeatureEnabled()
         ? {
             defaultView: z
               .enum(['chat', 'transcript'])

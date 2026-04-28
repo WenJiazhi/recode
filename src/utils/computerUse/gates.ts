@@ -2,6 +2,7 @@ import type { CoordinateMode, CuSubGates } from '@ant/computer-use-mcp/types'
 
 import { getDynamicConfig_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js'
 import { getSubscriptionType } from '../auth.js'
+import { feature } from 'bun:bundle'
 import { isEnvTruthy } from '../envUtils.js'
 
 type ChicagoConfig = CuSubGates & {
@@ -10,7 +11,7 @@ type ChicagoConfig = CuSubGates & {
 }
 
 const DEFAULTS: ChicagoConfig = {
-  enabled: false,
+  enabled: true,
   pixelValidation: false,
   clipboardPasteMultiline: true,
   mouseAnimation: true,
@@ -18,6 +19,12 @@ const DEFAULTS: ChicagoConfig = {
   autoTargetDisplay: true,
   clipboardGuard: true,
   coordinateMode: 'pixels',
+}
+
+export function isChicagoFeatureEnabled(): boolean {
+  return feature('CHICAGO_MCP')
+    ? true
+    : isEnvTruthy(process.env.FEATURE_CHICAGO_MCP)
 }
 
 // Spread over defaults so a partial JSON ({"enabled": true} alone) inherits the
@@ -39,7 +46,7 @@ function readConfig(): ChicagoConfig {
 function hasRequiredSubscription(): boolean {
   if (process.env.USER_TYPE === 'ant') return true
   const tier = getSubscriptionType()
-  return tier === 'max' || tier === 'pro'
+  return tier === null || tier === 'max' || tier === 'pro'
 }
 
 export function getChicagoEnabled(): boolean {

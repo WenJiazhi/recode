@@ -480,6 +480,7 @@ function containsDangerousOperations(expression: string): boolean {
   // Reject non-ASCII characters (Unicode homoglyphs, combining chars, etc.)
   // Examples: ｗ (fullwidth), ᴡ (small capital), w̃ (combining tilde)
   // Check for characters outside ASCII range (0x01-0x7F, excluding null byte)
+  // biome-ignore lint/complexity/useRegexLiterals: control-character range stays in string form to avoid noControlCharactersInRegex false positives
   if (new RegExp(String.raw`[^\u0001-\u007F]`).test(cmd)) {
     return true
   }

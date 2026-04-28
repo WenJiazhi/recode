@@ -1,5 +1,4 @@
 import { c as _c } from "react/compiler-runtime";
-import { feature } from 'bun:bundle';
 import { plot as asciichart } from 'asciichart';
 import chalk from 'chalk';
 import figures from 'figures';
@@ -19,6 +18,7 @@ import { generateHeatmap } from '../utils/heatmap.js';
 import { renderModelName } from '../utils/model/model.js';
 import { copyAnsiToClipboard } from '../utils/screenshotClipboard.js';
 import { aggregateClaudeCodeStatsForRange, type ClaudeCodeStats, type DailyModelTokens, type StatsDateRange } from '../utils/stats.js';
+import { isShotStatsFeatureEnabled } from '../utils/shotStatsFeatureEnabled.js';
 import { resolveThemeSetting } from '../utils/systemTheme.js';
 import { getTheme, themeColorToAnsi } from '../utils/theme.js';
 import { Pane } from './design-system/Pane.js';
@@ -388,7 +388,7 @@ function OverviewTab({
       pct: number;
     }[];
   } | null = null;
-  if (feature('SHOT_STATS') && stats.shotDistribution) {
+  if (isShotStatsFeatureEnabled() && stats.shotDistribution) {
     const dist = stats.shotDistribution;
     const total = Object.values(dist).reduce((s, n) => s + n, 0);
     if (total > 0) {
@@ -1157,7 +1157,7 @@ function renderOverviewToAnsi(stats: ClaudeCodeStats): string[] {
   }
 
   // Shot stats (ant-only)
-  if (feature('SHOT_STATS') && stats.shotDistribution) {
+  if (isShotStatsFeatureEnabled() && stats.shotDistribution) {
     const dist = stats.shotDistribution;
     const totalWithShots = Object.values(dist).reduce((s, n) => s + n, 0);
     if (totalWithShots > 0) {

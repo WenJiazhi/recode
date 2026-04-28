@@ -27,6 +27,7 @@ import {
 } from '../../utils/teammate.js'
 import { writeToMailbox } from '../../utils/teammateMailbox.js'
 import { VERIFICATION_AGENT_TYPE } from '../AgentTool/constants.js'
+import { isVerificationAgentFeatureEnabled } from '../AgentTool/verificationAgentFeatureEnabled.js'
 import { TASK_UPDATE_TOOL_NAME } from './constants.js'
 import { DESCRIPTION, PROMPT } from './prompt.js'
 
@@ -332,7 +333,7 @@ export const TaskUpdateTool = buildTool({
     // does not touch the public SDK surface.
     let verificationNudgeNeeded = false
     if (
-      feature('VERIFICATION_AGENT') &&
+      isVerificationAgentFeatureEnabled() &&
       getFeatureValue_CACHED_MAY_BE_STALE('tengu_hive_evidence', false) &&
       !context.agentId &&
       updates.status === 'completed'

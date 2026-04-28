@@ -1,7 +1,9 @@
-// Width-aware truncation/wrapping — needs ink/stringWidth (not leaf-safe).
+// Width-aware truncation/wrapping - needs ink/stringWidth (not leaf-safe).
 
 import { stringWidth } from '../ink/stringWidth.js'
 import { getGraphemeSegmenter } from './intl.js'
+
+const ELLIPSIS = '…'
 
 /**
  * Truncates a file path in the middle to preserve both directory context and filename.
@@ -14,85 +16,78 @@ import { getGraphemeSegmenter } from './intl.js'
  * @returns The truncated path, or original if it fits within maxLength
  */
 export function truncatePathMiddle(path: string, maxLength: number): string {
-  // No truncation needed
   if (stringWidth(path) <= maxLength) {
     return path
   }
 
-  // Handle edge case of very small or non-positive maxLength
   if (maxLength <= 0) {
-    return '…'
+    return ELLIPSIS
   }
 
-  // Need at least room for "…" + something meaningful
   if (maxLength < 5) {
     return truncateToWidth(path, maxLength)
   }
 
-  // Find the filename (last path segment)
   const lastSlash = path.lastIndexOf('/')
-  // Include the leading slash in filename for display
   const filename = lastSlash >= 0 ? path.slice(lastSlash) : path
   const directory = lastSlash >= 0 ? path.slice(0, lastSlash) : ''
   const filenameWidth = stringWidth(filename)
 
-  // If filename alone is too long, truncate from start
-  if (filenameWidth >= maxLength - 1) {
+  if (filenameWidth >= maxLength - stringWidth(ELLIPSIS)) {
     return truncateStartToWidth(path, maxLength)
   }
 
-  // Calculate space available for directory prefix
-  // Result format: directory + "…" + filename
-  const availableForDir = maxLength - 1 - filenameWidth // -1 for ellipsis
+  const availableForDir = maxLength - stringWidth(ELLIPSIS) - filenameWidth
 
   if (availableForDir <= 0) {
-    // No room for directory, just show filename (truncated if needed)
     return truncateStartToWidth(filename, maxLength)
   }
 
-  // Truncate directory and combine
   const truncatedDir = truncateToWidthNoEllipsis(directory, availableForDir)
-  return truncatedDir + '…' + filename
+  return `${truncatedDir}${ELLIPSIS}${filename}`
 }
 
 /**
  * Truncates a string to fit within a maximum display width, measured in terminal columns.
  * Splits on grapheme boundaries to avoid breaking emoji or surrogate pairs.
- * Appends '…' when truncation occurs.
+ * Appends an ellipsis when truncation occurs.
  */
 export function truncateToWidth(text: string, maxWidth: number): string {
   if (stringWidth(text) <= maxWidth) return text
-  if (maxWidth <= 1) return '…'
+  if (maxWidth <= stringWidth(ELLIPSIS)) return ELLIPSIS
+
   let width = 0
   let result = ''
   for (const { segment } of getGraphemeSegmenter().segment(text)) {
     const segWidth = stringWidth(segment)
-    if (width + segWidth > maxWidth - 1) break
+    if (width + segWidth > maxWidth - stringWidth(ELLIPSIS)) break
     result += segment
     width += segWidth
   }
-  return result + '…'
+  return result + ELLIPSIS
 }
 
 /**
  * Truncates from the start of a string, keeping the tail end.
- * Prepends '…' when truncation occurs.
+ * Prepends an ellipsis when truncation occurs.
  * Width-aware and grapheme-safe.
  */
 export function truncateStartToWidth(text: string, maxWidth: number): string {
   if (stringWidth(text) <= maxWidth) return text
-  if (maxWidth <= 1) return '…'
+  if (maxWidth <= stringWidth(ELLIPSIS)) return ELLIPSIS
+
   const segments = [...getGraphemeSegmenter().segment(text)]
   let width = 0
   let startIdx = segments.length
   for (let i = segments.length - 1; i >= 0; i--) {
     const segWidth = stringWidth(segments[i]!.segment)
-    if (width + segWidth > maxWidth - 1) break // -1 for '…'
+    if (width + segWidth > maxWidth - stringWidth(ELLIPSIS)) break
     width += segWidth
     startIdx = i
   }
+
   return (
-    '…' +
+    ELLIPSIS +
     segments
       .slice(startIdx)
       .map(s => s.segment)
@@ -102,7 +97,7 @@ export function truncateStartToWidth(text: string, maxWidth: number): string {
 
 /**
  * Truncates a string to fit within a maximum display width, without appending an ellipsis.
- * Useful when the caller adds its own separator (e.g. middle-truncation with '…' between parts).
+ * Useful when the caller adds its own separator (e.g. middle-truncation with an ellipsis between parts).
  * Width-aware and grapheme-safe.
  */
 export function truncateToWidthNoEllipsis(
@@ -111,6 +106,7 @@ export function truncateToWidthNoEllipsis(
 ): string {
   if (stringWidth(text) <= maxWidth) return text
   if (maxWidth <= 0) return ''
+
   let width = 0
   let result = ''
   for (const { segment } of getGraphemeSegmenter().segment(text)) {
@@ -125,7 +121,7 @@ export function truncateToWidthNoEllipsis(
 /**
  * Truncates a string to fit within a maximum display width (terminal columns),
  * splitting on grapheme boundaries to avoid breaking emoji, CJK, or surrogate pairs.
- * Appends '…' when truncation occurs.
+ * Appends an ellipsis when truncation occurs.
  * @param str The string to truncate
  * @param maxWidth Maximum display width in terminal columns
  * @param singleLine If true, also truncates at the first newline
@@ -138,16 +134,14 @@ export function truncate(
 ): string {
   let result = str
 
-  // If singleLine is true, truncate at first newline
   if (singleLine) {
     const firstNewline = str.indexOf('\n')
     if (firstNewline !== -1) {
       result = str.substring(0, firstNewline)
-      // Ensure total width including ellipsis doesn't exceed maxWidth
-      if (stringWidth(result) + 1 > maxWidth) {
+      if (stringWidth(result) + stringWidth(ELLIPSIS) > maxWidth) {
         return truncateToWidth(result, maxWidth)
       }
-      return `${result}…`
+      return `${result}${ELLIPSIS}`
     }
   }
 

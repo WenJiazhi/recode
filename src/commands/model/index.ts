@@ -6,7 +6,11 @@ export default {
   type: 'local-jsx',
   name: 'model',
   get description() {
-    return `Set the AI model for recode (currently ${renderModelName(getMainLoopModel())})`
+    try {
+      return `Set the AI model for recode (currently ${renderModelName(getMainLoopModel())})`
+    } catch {
+      return 'Set the AI model for recode'
+    }
   },
   argumentHint: '[model]',
   get immediate() {

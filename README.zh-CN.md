@@ -5,7 +5,7 @@
 
 ## Bun + TypeScript 终端编程助手
 
-`recode` 是一个以 Bun + TypeScript 为核心的终端编程助手项目，现在已经作为独立仓库和独立维护线继续推进。它可以更准确地理解为一个面向编程主线的 Claude Code 重建与二次开发项目：保留有价值的 CLI/runtime 结构，修好高价值编程路径，把这棵重建出来的代码树整理成一个真正能日常使用的工具。
+`recode` 是一个以 Bun + TypeScript 为核心的终端编程助手项目，当前作为独立仓库和独立维护线继续推进。现在的目标仍然很明确：把 Claude Code / CCB 这条基座里真正有价值的编程能力重新拼起来、修稳、验证清楚，然后只合并那些有意义的上游切片，而不是再造一套新的臃肿产品面。
 
 当前版本：`0.0.1`
 
@@ -16,65 +16,82 @@
 | 版本 | `0.0.1` |
 | 运行时 | Bun |
 | 语言 | TypeScript |
-| 源码文件数（`.ts` / `.tsx`） | `2783` |
-| 命令模块数（`src/commands/*`） | `94` |
+| 源码文件数（`src/**/*.ts,tsx`） | `2850` |
+| 命令模块数（`src/commands/*`） | `95` |
 | 工具模块数（`src/tools/*`） | `55` |
 | Workspace 包数量 | `6` |
-| 文档文件数（`docs/*.md` / `docs/*.mdx`） | `33` |
-| 当前本地测试结果 | `55 pass / 0 fail` |
+| 文档文件数（`docs/*.md` / `docs/*.mdx`） | `34` |
+| 当前本地测试结果 | `218 pass / 0 fail` |
+| 当前 lint 快照 | `clean / 0 blocking errors` |
 
 ## 重建进度板
 
-下面这张表就是当前主线首页清单，直接回答三件事：已经做了什么、还没做什么、接下来做什么。
-
-| 模块 | 状态 | 已经完成 | 还没完成 | 下一步 |
+| 模块 | 状态 | 已完成 | 剩余问题 | 下一步 |
 | --- | --- | --- | --- | --- |
-| CLI 启动与入口 | 可用 | `recode --help`、`recode --version`、源码入口 launcher、构建链路可用 | 打包产物 `dist/cli.js` 还不适合长会话主入口 | 继续以 `src/entrypoints/cli.tsx` 为稳定日常入口 |
-| Headless prompt 与 slash commands | 可用 | `/help`、`/status`、`/doctor`、`/files`、`/diff`、`/tasks`、`/review`、`/commit`、`/model-map` 已验证 | 整棵命令树还没全部跑完 | 继续按优先级把高价值命令逐条收口 |
-| 交互式 REPL | 可用 | 主 REPL 能启动，核心命令面可进入 | UI 细节和原版体验仍有差距 | 在不破坏主线的前提下继续做 source-faithful 修补 |
-| review / commit 工作流 | 部分完成 | `/review` 和 `/commit` 已验证，内建注册已恢复 | `/commit-push-pr` 仍只开放交互态，完整 GitHub 路径还没验完 | 做真实 push/PR 端到端验证 |
-| LSP / 代码智能 | 部分完成 | LSP 工具已重新接回，manager 初始化链路已恢复 | 当前环境里仍然发现 `0` 个 LSP server | 接入至少一个真实 server 配置并验证一次真实调用 |
-| branch / worktree / git 工作流 | 部分完成 | 分支/worktree 相关命令树在，基础 git 流可用 | 交互式 worktree parity 还没完整验证 | 验证一条真实 branch 路径和一条真实 worktree 路径 |
-| MCP / 插件 / agents | 部分完成 | 常用 list/help/management 路径可用 | 深层生命周期兼容还没系统验完 | 继续按高频路径做兼容验证 |
-| Provider 路由与配置 | 可用 | 本地 provider 配置、API key 文件、CPA 路由、自定义 `/v1/models`、别名映射都已打通 | 低频 provider 边角路径还没完全收口 | 继续把自定义 provider 和 Anthropic-only 路径隔离清楚 |
-| Remote / bridge / voice / workflows | 受限 | 源码树保留 | 这些不是当前最高优先级的编程主线 | 先不打开，等本地 coding loop 稳定后再说 |
+| CLI 启动与入口 | 就绪 | `recode --help`、`--version`、源码入口、打包入口、仓库外 cwd 启动都正常 | `dist/cli.js` 仍不适合超长会话主入口 | 继续把 source-first 入口作为日常入口 |
+| Headless 命令与 prompt 主链 | 就绪 | `/help`、`/status`、`/doctor`、`/files`、`/diff`、`/tasks`、`/context`、`/review`、`/commit`、`/model-map`、`/brief`、`/voice`、`/chrome`、`/ultraplan`、`/remote-control` 都已正确分流 | 低频命令还可以继续抽查 | 继续保持命令面可预测 |
+| 交互式 REPL | 可用 | 核心 REPL、设置页、auto 模式、主要命令入口都已可用 | 低频 UI 细节还不如原版 | 继续做 source-faithful 的小修补，不重写交互模型 |
+| Review / Commit 工作流 | 部分完成 | prompt 生成、shell 占位符展开、headless fallback 都已验证 | 更深的交互式 GitHub 发布链仍保持保守 | 在不碰远端副作用的前提下继续验证 |
+| LSP / 代码智能 | 部分完成 | `.recode/lsp.json`、manager 路由、推荐链、诊断、真实 definition 请求链都已接通并有回归 | 日常使用仍然依赖用户本机有真实 LSP server | 继续把首条成功配置路径做得更清楚 |
+| Branch / Worktree / Session 连续性 | 部分完成 | create/cleanup/dirty detection、`.worktreeinclude`、keep/reuse、agent worktree、resume continuity、permission round-trip 都已回归覆盖 | 更深的交互态 parity 仍值得继续验证 | 继续补互动链，不放松安全边界 |
+| Provider 路由与 CPA 支持 | 就绪 | 本地 provider 配置、key 文件、CPA 路由、自定义 `/v1/models`、别名映射都已打通 | 低频 provider 边角还没完全收干净 | 继续把自定义 provider 和 Anthropic-only 路径隔离清楚 |
+| CCB 功能对齐 | 就绪 | 1–16 项高价值对齐项已完成：OpenAI tool-calling、local gates、`[local]` 标签、interview shim、ultraplan、voice、bridge、computer-use/chrome-use、brief、away-summary、token-budget、prompt-cache-break、verification-agent、agent-triggers / explore-plan gate、extract-memories / Lodestone、shot-stats | 现在剩下的是合并后的收口，不是缺功能切片 | 继续做 source-faithful 验证与清理 |
+| Windows computer-use / chrome-use | 部分完成 | cross-platform executor、input/swift backends、真实 MCP 包、`open_terminal` fallback、终端 `request_access`、`bind_window` 的仓库内 smoke 都已打通 | 仓库外的桌面壳层仍可能有问题 | 继续收 Windows 终端/窗口集成链，不重造 runtime |
+
+## CCB 对齐清单
+
+| 顺序 | 项目 | 状态 |
+| --- | --- | --- |
+| 1 | OpenAI adapter tool-calling compatibility | `completed` |
+| 2 | GrowthBook local gate defaults for coding-critical P0/P1 features | `completed` |
+| 3 | Project-local skill `[local]` labels | `completed` |
+| 4 | Interview shim over existing runtime | `completed` |
+| 5 | Ultraplan gate/runtime alignment | `completed` |
+| 6 | Voice gate/runtime alignment | `completed` |
+| 7 | Bridge gate/runtime alignment | `completed` |
+| 8 | Computer-use / Chrome-use alignment | `completed` |
+| 9 | Brief / `KAIROS_BRIEF` | `completed` |
+| 10 | Away summary / `AWAY_SUMMARY` | `completed` |
+| 11 | Token budget / `TOKEN_BUDGET` | `completed` |
+| 12 | Prompt cache break detection / `PROMPT_CACHE_BREAK_DETECTION` | `completed` |
+| 13 | Verification agent / `VERIFICATION_AGENT` | `completed` |
 
 ## CPA 支持矩阵
 
-这是当前 `recode` 最明确、最有价值的二次开发方向。
-
 | 能力 | 状态 | 说明 |
 | --- | --- | --- |
-| 项目内 provider 配置 | 可用 | 以 `.recode/local-provider.json` 作为主配置入口 |
-| 本地 API key 文件 | 可用 | 支持 `.recode/api-key.txt`，且不会进 git |
-| provider 类型路由 | 可用 | 通过 `providerType` + `baseURL` 决定实际 provider |
-| CPA base URL | 可用 | 当前项目配置支持 `https://cpa.cpapi.app` |
-| 自定义 `/v1/models` 发现 | 可用 | 自定义 host 的模型发现和缓存已接通 |
-| 三别名映射 | 可用 | `/model-map` 可分别配置 `Opus / Sonnet / Haiku` |
-| 思考量后缀透传 | 可用 | `gpt-5.4(high)` 这类 CPA 风格模型名会保留 |
-| context cap 持久化 | 可用 | `/model-map context 258k` 会保存 `258000` |
-| 便携配置继承 | 可用 | 便携运行时可直接携带本地 `.recode` 目录 |
-| 项目内 LSP 配置 | 可用 | `.recode/lsp.json` 现在也是可用的本地 server 发现入口 |
+| 项目内 provider 配置 | 就绪 | `.recode/local-provider.json` 是主路由入口 |
+| 本地 API key 文件 | 就绪 | `.recode/api-key.txt` 不进 git |
+| provider 类型路由 | 就绪 | `providerType` + `baseURL` 决定实际 provider |
+| CPA base URL | 就绪 | 当前项目流支持 `https://cpa.cpapi.app` |
+| 自定义 `/v1/models` 发现 | 就绪 | 自定义 host 模型发现和能力缓存已打通 |
+| 三别名映射 | 就绪 | `/model-map` 可单独配置 `Opus / Sonnet / Haiku` |
+| 思考量后缀透传 | 就绪 | `gpt-5.4(high)` 这类名字会保留 |
+| context cap 持久化 | 就绪 | `/model-map context 258k` 会保存 `258000` |
+| CPA GPT-5 下的 auto 模式 | 就绪 | CPA / OpenAI GPT-5 路线不再被旧的 Claude-only auto gate 挡住 |
+| 项目内 LSP 配置 | 就绪 | `.recode/lsp.json` 已是正式本地 server 入口 |
 
-## 当前已经验证可用
+## 当前已验证可用
 
 | 领域 | 已验证命令 / 路径 |
 | --- | --- |
 | CLI | `recode --help`、`recode --version`、`recode -p "<prompt>"` |
-| Headless 内建命令 | `recode -p "/help"`、`recode -p "/status"`、`recode -p "/doctor"`、`recode -p "/files"`、`recode -p "/diff"`、`recode -p "/tasks"`、`recode -p "/review"`、`recode -p "/commit"` |
-| Headless fallback 提示 | `recode -p "/config"`、`recode -p "/model"`、`recode -p "/commit-push-pr"` |
-| 模型映射 | `recode -p "/model-map help"`、`recode -p "/model-map status"`、`recode -p "/model-map context 258k"` |
-| 管理面 | `recode auth status`、`recode agents`、`recode mcp --help`、`recode mcp list`、`recode plugin list` |
+| Headless 内建命令 | `recode -p "/help"`、`"/status"`、`"/doctor"`、`"/files"`、`"/diff"`、`"/tasks"`、`"/context"`、`"/review"`、`"/commit"` |
+| 交互命令 fallback | `"/config"`、`"/model"`、`"/branch"`、`"/compact"`、`"/init"`、`"/commit-push-pr"`、`"/brief"`、`"/voice"`、`"/chrome"`、`"/ultraplan"`、`"/remote-control"` |
+| 模型与 auto 模式 | `recode --permission-mode auto -p "hi"`、`recode auto-mode defaults`、`recode -p "/model-map status"` |
+| Provider / CPA | 真实 CPA `-p` 请求、项目内 provider 加载、`/model-map context 258k` |
+| LSP | `.recode/lsp.json`、`/doctor`、`/status`、推荐链、错误提示、真实 definition 请求链 |
+| MCP / plugins / agents | `recode auth status`、`recode agents`、`recode mcp --help`、`recode mcp list`、`recode plugin list` |
+| Windows computer-use | `--computer-use-mcp`、`open_terminal`、终端 `request_access`、`bind_window` 仓库内 smoke |
 
 ## 当前冲刺顺序
 
-| 优先级 | 项目 | 为什么它排在前面 |
+| 优先级 | 项目 | 为什么现在做 |
 | --- | --- | --- |
-| P1 | LSP 端到端可用性 | 代码智能是当前最缺、但对编程日常价值极高的一块 |
-| P2 | branch / worktree parity | 安全的 git 隔离和分支工作流是核心 coding loop 的一部分 |
-| P3 | context inspection parity | `/context` 对理解 prompt 压力、工具和 memory 很关键 |
-| P4 | 剩余 headless routing 缺口 | 源码在不代表行为对，命令路径要继续收口 |
-| P5 | permissions / tool gating 复查 | rebuild 过程中必须保证工具可用性不倒退 |
+| P1 | 进度表重整与剩余 lint 清理 | 主线已经是绿的，现在最高价值是把维护噪音继续压下去，并让状态表保持真实 |
+| P2 | Windows 桌面控制收口 | 仓库内主链已经明显变好，剩下的真实摩擦主要在终端/窗口集成 |
+| P3 | Review / Commit / Branch / Worktree 交互验证 | coding 主链已经在，但更深的交互态验证仍然有价值 |
+| P4 | 低频品牌和文案清理 | 重要，但优先级低于稳定性和可维护性 |
 
 ## 快速开始
 
@@ -94,7 +111,7 @@ bun install
 bun run dev
 ```
 
-在仓库里直接启动：
+直接从仓库启动：
 
 ```bash
 .\recode.cmd
@@ -114,19 +131,19 @@ bun ./dist/cli.js
 
 当前建议：
 
-- 日常本地使用优先走 `.\recode.cmd`
-- `bun ./dist/cli.js` 目前主要作为构建验证路径，不建议当长会话主入口
+- 日常本地使用优先走 `.\recode.cmd` 或 `recode`
+- `bun ./dist/cli.js` 目前主要作为构建验证路径，不建议作为超长会话主入口
 
 ## 仓库文档
 
 | 文档 | 用途 |
 | --- | --- |
-| [docs/SOURCE_PARITY_CHECKLIST.md](./docs/SOURCE_PARITY_CHECKLIST.md) | 按模块跟踪和源码树的对齐情况 |
-| [docs/STATUS.md](./docs/STATUS.md) | 当前验证快照和可用路径 |
-| [docs/COMMAND_TOOL_AUDIT.md](./docs/COMMAND_TOOL_AUDIT.md) | 已验证命令和工具覆盖面 |
-| [docs/PRIORITY_REBUILD_BACKLOG.md](./docs/PRIORITY_REBUILD_BACKLOG.md) | 从高价值到低价值的重建顺序 |
+| [docs/SOURCE_PARITY_CHECKLIST.md](./docs/SOURCE_PARITY_CHECKLIST.md) | 与恢复后源码树的对齐情况 |
+| [docs/STATUS.md](./docs/STATUS.md) | 当前验证快照与可用路径 |
+| [docs/CCB_MERGE_PLAN.md](./docs/CCB_MERGE_PLAN.md) | 当前 CCB 对齐台账与合并后剩余差距 |
+| [docs/PRIORITY_REBUILD_BACKLOG.md](./docs/PRIORITY_REBUILD_BACKLOG.md) | 还值得继续做的高价值事项 |
+| [docs/COMMAND_TOOL_AUDIT.md](./docs/COMMAND_TOOL_AUDIT.md) | 已验证命令与工具覆盖面 |
 | [docs/WORKLOG.md](./docs/WORKLOG.md) | 已完成修补工作的实现日志 |
-| `docs/archive/` | 存放旧迁移记录，避免继续占据仓库根目录 |
 | `.recode/lsp.example.json` | 项目内 LSP server 配置示例 |
 
 ## 致谢
@@ -134,11 +151,11 @@ bun ./dist/cli.js
 | 项目 | 说明 |
 | --- | --- |
 | 当前维护 | 当前仓库以 `recode` 名义独立维护 |
-| 工程基座 | Bun + TypeScript 工程基座来自此前围绕 Claude Code CLI 的开源逆向和恢复工作，其中包括 `claude-code-best/claude-code` |
-| 当前归属 | 当前目录组织、打包方式、CPA 支持、配置流和后续重建方向由本仓库继续维护 |
+| 工程基座 | Bun + TypeScript 工程基座来自围绕 Claude Code CLI 的开源逆向和恢复工作，其中包括 `claude-code-best/claude-code` |
+| 当前归属 | 当前目录结构、打包方式、CPA 支持、配置流和后续重建方向由本仓库继续维护 |
 
 ## 说明
 
 - 这不是 Anthropic 官方仓库。
-- 当前仓库的重点是“编程主线优先”的真实重建，不是假装已经完全 parity。
-- 首页这些表格会持续保持诚实：什么已经做了，什么还没做，接下来做什么。
+- 当前方向依然是“原始能力拼接 + 编程主线优先”，不是为了做大而大的功能堆积。
+- 上面的表格会持续保持诚实：什么已经做了，什么还没做，下一步要做什么。

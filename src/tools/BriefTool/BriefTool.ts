@@ -8,6 +8,7 @@ import { buildTool, type ToolDef } from '../../Tool.js'
 import { isEnvTruthy } from '../../utils/envUtils.js'
 import { lazySchema } from '../../utils/lazySchema.js'
 import { plural } from '../../utils/stringUtils.js'
+import { isBriefFeatureEnabled } from './briefFeatureEnabled.js'
 import { resolveAttachments, validateAttachmentPaths } from './attachments.js'
 import {
   BRIEF_TOOL_NAME,
@@ -88,7 +89,7 @@ const KAIROS_BRIEF_REFRESH_MS = 5 * 60 * 1000
 export function isBriefEntitled(): boolean {
   // Positive ternary — see docs/feature-gating.md. Negative early-return
   // would not eliminate the GB gate string from external builds.
-  return feature('KAIROS') || feature('KAIROS_BRIEF')
+  return isBriefFeatureEnabled()
     ? getKairosActive() ||
         isEnvTruthy(process.env.CLAUDE_CODE_BRIEF) ||
         getFeatureValue_CACHED_WITH_REFRESH(
@@ -128,7 +129,7 @@ export function isBriefEnabled(): boolean {
   // the ternary to `false` in external builds and then dead-code the BriefTool
   // object. Composing isBriefEntitled() alone (which has its own guard) is
   // semantically equivalent but defeats constant-folding across the boundary.
-  return feature('KAIROS') || feature('KAIROS_BRIEF')
+  return isBriefFeatureEnabled()
     ? (getKairosActive() || getUserMsgOptIn()) && isBriefEntitled()
     : false
 }

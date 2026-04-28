@@ -11,6 +11,8 @@ import { isEnvTruthy } from '../utils/envUtils.js';
 import type { TextHighlight } from '../utils/textHighlighting.js';
 import { BaseTextInput } from './BaseTextInput.js';
 import { hueToRgb } from './Spinner/utils.js';
+const VOICE_MODE_ENABLED =
+  feature('VOICE_MODE') ? true : isEnvTruthy(process.env.FEATURE_VOICE_MODE);
 
 // Block characters for waveform bars: space (silent) + 8 rising block elements.
 const BARS = ' \u2581\u2582\u2583\u2584\u2585\u2586\u2587\u2588';
@@ -41,17 +43,14 @@ export default function TextInput(props: Props): React.ReactNode {
   const accessibilityEnabled = useMemo(() => isEnvTruthy(process.env.CLAUDE_CODE_ACCESSIBILITY), []);
   const settings = useSettings();
   const reducedMotion = settings.prefersReducedMotion ?? false;
-  const voiceState = feature('VOICE_MODE') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const voiceState = VOICE_MODE_ENABLED ?
   useVoiceState(s => s.voiceState) : 'idle' as const;
   const isVoiceRecording = voiceState === 'recording';
-  const audioLevels = (feature('VOICE_MODE') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const audioLevels = (VOICE_MODE_ENABLED ?
   useVoiceState(s_0 => s_0.voiceAudioLevels) : []) as number[];
   const smoothedRef = useRef<number[]>(new Array(CURSOR_WAVEFORM_WIDTH).fill(0));
   const needsAnimation = isVoiceRecording && !reducedMotion;
-  const [animRef, animTime] = feature('VOICE_MODE') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+  const [animRef, animTime] = VOICE_MODE_ENABLED ?
   useAnimationFrame(needsAnimation ? 50 : null) : [() => {}, 0];
 
   // Show hint when terminal regains focus and clipboard has an image

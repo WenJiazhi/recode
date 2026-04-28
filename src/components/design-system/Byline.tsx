@@ -1,6 +1,7 @@
 import { c as _c } from "react/compiler-runtime";
 import React, { Children, isValidElement } from 'react';
 import { Text } from '../../ink.js';
+
 type Props = {
   /** The items to join with a middot separator */
   children: React.ReactNode;
@@ -71,6 +72,7 @@ export function Byline(t0) {
   }
   return t3;
 }
+
 function _temp(child, index) {
   return <React.Fragment key={isValidElement(child) ? child.key ?? index : index}>{index > 0 && <Text dimColor={true}> · </Text>}{child}</React.Fragment>;
 }

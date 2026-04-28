@@ -1,7 +1,9 @@
 import { feature } from 'bun:bundle'
 import { satisfies } from 'src/utils/semver.js'
 import { isRunningWithBun } from '../utils/bundledMode.js'
+import { isEnvTruthy } from '../utils/envUtils.js'
 import { getPlatform } from '../utils/platform.js'
+import { isBriefFeatureEnabled } from '../tools/BriefTool/briefFeatureEnabled.js'
 import type { KeybindingBlock } from './types.js'
 
 /**
@@ -28,6 +30,8 @@ const SUPPORTS_TERMINAL_VT_MODE =
 // - Windows without VT mode: meta+m (shift+tab doesn't work reliably)
 // - Other platforms: shift+tab
 const MODE_CYCLE_KEY = SUPPORTS_TERMINAL_VT_MODE ? 'shift+tab' : 'meta+m'
+const VOICE_MODE_ENABLED =
+  feature('VOICE_MODE') ? true : isEnvTruthy(process.env.FEATURE_VOICE_MODE)
 
 export const DEFAULT_BINDINGS: KeybindingBlock[] = [
   {
@@ -42,7 +46,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       'ctrl+l': 'app:redraw',
       'ctrl+t': 'app:toggleTodos',
       'ctrl+o': 'app:toggleTranscript',
-      ...(feature('KAIROS') || feature('KAIROS_BRIEF')
+      ...(isBriefFeatureEnabled()
         ? { 'ctrl+shift+b': 'app:toggleBrief' as const }
         : {}),
       'ctrl+shift+o': 'app:toggleTeammatePreview',
@@ -93,7 +97,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       // add a voice:pushToTalk entry (last wins); to disable, use /voice
       // — null-unbinding space hits a pre-existing useKeybinding.ts trap
       // where 'unbound' swallows the event (space dead for typing).
-      ...(feature('VOICE_MODE') ? { space: 'voice:pushToTalk' } : {}),
+      ...(VOICE_MODE_ENABLED ? { space: 'voice:pushToTalk' } : {}),
     },
   },
   {

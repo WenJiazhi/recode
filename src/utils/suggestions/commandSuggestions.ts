@@ -271,6 +271,12 @@ function createCommandSuggestionItem(
   const aliasText = matchedAlias ? ` (${matchedAlias})` : ''
 
   const isWorkflow = cmd.type === 'prompt' && cmd.kind === 'workflow'
+  const scopeTag =
+    cmd.type === 'prompt' &&
+    !isWorkflow &&
+    (cmd.source === 'projectSettings' || cmd.source === 'localSettings')
+      ? 'local'
+      : undefined
   const fullDescription =
     (isWorkflow ? cmd.description : formatDescriptionWithSource(cmd)) +
     (cmd.type === 'prompt' && cmd.argNames?.length
@@ -280,7 +286,7 @@ function createCommandSuggestionItem(
   return {
     id: getCommandId(cmd),
     displayText: `/${commandName}${aliasText}`,
-    tag: isWorkflow ? 'workflow' : undefined,
+    tag: isWorkflow ? 'workflow' : scopeTag,
     description: fullDescription,
     metadata: cmd,
   }

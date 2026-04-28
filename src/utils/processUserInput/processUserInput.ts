@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto'
 import type { QuerySource } from 'src/constants/querySource.js'
 import { logEvent } from 'src/services/analytics/index.js'
 import { getContentText } from 'src/utils/messages.js'
+import { isUltraplanFeatureEnabled } from 'src/utils/ultraplanFeatureEnabled.js'
 import {
   findCommand,
   getCommandName,
@@ -465,7 +466,7 @@ async function processUserInputBase(
   // path below (no await between setUserInputOnProcessing and setAppState —
   // React batches both into one render, no flash).
   if (
-    feature('ULTRAPLAN') &&
+    isUltraplanFeatureEnabled() &&
     mode === 'prompt' &&
     !context.options.isNonInteractiveSession &&
     inputString !== null &&

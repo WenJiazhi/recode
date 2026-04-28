@@ -7,6 +7,7 @@ import {
   logEvent,
 } from '../services/analytics/index.js'
 import type { ToolUseContext } from '../Tool.js'
+import { isBriefFeatureEnabled } from '../tools/BriefTool/briefFeatureEnabled.js'
 import { isBriefEntitled } from '../tools/BriefTool/BriefTool.js'
 import { BRIEF_TOOL_NAME } from '../tools/BriefTool/prompt.js'
 import type {
@@ -49,7 +50,7 @@ const brief = {
   name: 'brief',
   description: 'Toggle brief-only mode',
   isEnabled: () => {
-    if (feature('KAIROS') || feature('KAIROS_BRIEF')) {
+    if (isBriefFeatureEnabled()) {
       return getBriefConfig().enable_slash_command
     }
     return false

@@ -5,6 +5,7 @@ import {
   NOTIFICATION_CHANNELS,
   TEAMMATE_MODES,
 } from '../../utils/configConstants.js'
+import { isEnvTruthy } from '../../utils/envUtils.js'
 import { getModelOptions } from '../../utils/model/modelOptions.js'
 import { validateModel } from '../../utils/model/validateModel.js'
 import { THEME_NAMES, THEME_SETTINGS } from '../../utils/theme.js'
@@ -25,6 +26,11 @@ type SettingConfig = {
   /** Format value when reading/getting for display */
   formatOnRead?: (v: unknown) => unknown
 }
+
+const VOICE_MODE_ENABLED =
+  feature('VOICE_MODE') ? true : isEnvTruthy(process.env.FEATURE_VOICE_MODE)
+const BRIDGE_MODE_ENABLED =
+  feature('BRIDGE_MODE') ? true : isEnvTruthy(process.env.FEATURE_BRIDGE_MODE)
 
 export const SUPPORTED_SETTINGS: Record<string, SettingConfig> = {
   theme: {
@@ -141,7 +147,7 @@ export const SUPPORTED_SETTINGS: Record<string, SettingConfig> = {
         },
       }
     : {}),
-  ...(feature('VOICE_MODE')
+  ...(VOICE_MODE_ENABLED
     ? {
         voiceEnabled: {
           source: 'settings' as const,
@@ -150,7 +156,7 @@ export const SUPPORTED_SETTINGS: Record<string, SettingConfig> = {
         },
       }
     : {}),
-  ...(feature('BRIDGE_MODE')
+  ...(BRIDGE_MODE_ENABLED
     ? {
         remoteControlAtStartup: {
           source: 'global' as const,

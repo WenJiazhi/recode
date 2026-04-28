@@ -73,6 +73,7 @@ import { getMCPUserAgent } from '../../utils/http.js'
 import { maybeNotifyIDEConnected } from '../../utils/ide.js'
 import { maybeResizeAndDownsampleImageBuffer } from '../../utils/imageResizer.js'
 import { logMCPDebug, logMCPError } from '../../utils/log.js'
+import { isChicagoFeatureEnabled } from '../../utils/computerUse/gates.js'
 import {
   getBinaryBlobSavedMessage,
   getFormatDescription,
@@ -239,11 +240,11 @@ const claudeInChromeToolRendering =
 // Lazy: wrapper.tsx → hostAdapter.ts → executor.ts pulls both native modules
 // (@ant/computer-use-input + @ant/computer-use-swift). Runtime-gated by
 // GrowthBook tengu_malort_pedway (see gates.ts).
-const computerUseWrapper = feature('CHICAGO_MCP')
+const computerUseWrapper = isChicagoFeatureEnabled()
   ? (): typeof import('../../utils/computerUse/wrapper.js') =>
       require('../../utils/computerUse/wrapper.js')
   : undefined
-const isComputerUseMCPServer = feature('CHICAGO_MCP')
+const isComputerUseMCPServer = isChicagoFeatureEnabled()
   ? (
       require('../../utils/computerUse/common.js') as typeof import('../../utils/computerUse/common.js')
     ).isComputerUseMCPServer
@@ -924,7 +925,7 @@ export const connectToServer = memoize(
         transport = clientTransport
         logMCPDebug(name, `In-process Chrome MCP server started`)
       } else if (
-        feature('CHICAGO_MCP') &&
+        isChicagoFeatureEnabled() &&
         ((serverRef as ScopedMcpServerConfig).type === 'stdio' || !(serverRef as ScopedMcpServerConfig).type) &&
         isComputerUseMCPServer!(name)
       ) {
@@ -1961,7 +1962,7 @@ export const fetchToolsForClient = memoizeWithLRU(
                   tool.name,
                 )
               : {}),
-            ...(feature('CHICAGO_MCP') &&
+            ...(isChicagoFeatureEnabled() &&
             (client.config.type === 'stdio' || !client.config.type) &&
             isComputerUseMCPServer!(client.name)
               ? computerUseWrapper!().getComputerUseMCPToolOverrides(tool.name)

@@ -17,7 +17,9 @@ import type {
   ToolUseSummaryMessage,
 } from '../types/message.js'
 import { createAttachmentMessage } from '../utils/attachments.js'
+import { isChicagoFeatureEnabled } from '../utils/computerUse/gates.js'
 import { logForDebugging } from '../utils/debug.js'
+import { isExtractMemoriesFeatureEnabled } from '../utils/extractMemoriesFeatureEnabled.js'
 import { errorMessage } from '../utils/errors.js'
 import type { REPLHookContext } from '../utils/hooks/postSamplingHooks.js'
 import {
@@ -39,7 +41,7 @@ import { getTaskListId, listTasks } from '../utils/tasks.js'
 import { getAgentName, getTeamName, isTeammate } from '../utils/teammate.js'
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-const extractMemoriesModule = feature('EXTRACT_MEMORIES')
+const extractMemoriesModule = isExtractMemoriesFeatureEnabled()
   ? (require('../services/extractMemories/extractMemories.js') as typeof import('../services/extractMemories/extractMemories.js'))
   : null
 const jobClassifierModule = feature('TEMPLATES')
@@ -139,7 +141,7 @@ export async function* handleStopHooks(
       void executePromptSuggestion(stopHookContext)
     }
     if (
-      feature('EXTRACT_MEMORIES') &&
+      isExtractMemoriesFeatureEnabled() &&
       !toolUseContext.agentId &&
       isExtractModeActive()
     ) {
@@ -161,7 +163,7 @@ export async function* handleStopHooks(
   // so a subagent's stopHooks releasing it leaves the main thread's cleanup
   // seeing isLockHeldLocally()===false → no exit notification, and unhides
   // mid-turn. Subagents don't start CU sessions so this is a pure skip.
-  if (feature('CHICAGO_MCP') && !toolUseContext.agentId) {
+  if (isChicagoFeatureEnabled() && !toolUseContext.agentId) {
     try {
       const { cleanupComputerUseAfterTurn } = await import(
         '../utils/computerUse/cleanup.js'

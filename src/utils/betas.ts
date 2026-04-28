@@ -25,9 +25,10 @@ import { OAUTH_BETA_HEADER } from '../constants/oauth.js'
 import { isClaudeAISubscriber } from './auth.js'
 import { has1mContext } from './context.js'
 import { isEnvDefinedFalsy, isEnvTruthy } from './envUtils.js'
+import { stripTrailingThinkingSuffix } from './model/customModelAliasMappings.js'
 import { getCanonicalName } from './model/model.js'
 import { get3PModelCapabilityOverride } from './model/modelSupportOverrides.js'
-import { getAPIProvider } from './model/providers.js'
+import { getAPIProvider, isCpaBaseUrl } from './model/providers.js'
 import { getInitialSettings } from './settings/settings.js'
 
 /**
@@ -69,7 +70,6 @@ export function filterAllowedSdkBetas(
   }
 
   if (isClaudeAISubscriber()) {
-    // biome-ignore lint/suspicious/noConsole: intentional warning
     console.warn(
       'Warning: Custom betas are only available for API key users. Ignoring provided betas.',
     )
@@ -78,7 +78,6 @@ export function filterAllowedSdkBetas(
 
   const { allowed, disallowed } = partitionBetasByAllowlist(sdkBetas)
   for (const beta of disallowed) {
-    // biome-ignore lint/suspicious/noConsole: intentional warning
     console.warn(
       `Warning: Beta header '${beta}' is not allowed. Only the following betas are supported: ${ALLOWED_SDK_BETAS.join(', ')}`,
     )
@@ -160,6 +159,21 @@ export function modelSupportsStructuredOutputs(model: string): boolean {
 export function modelSupportsAutoMode(model: string): boolean {
   if (feature('TRANSCRIPT_CLASSIFIER')) {
     const m = getCanonicalName(model)
+    const normalizedModel = stripTrailingThinkingSuffix(model)
+      .replace(/\[1m\]$/i, '')
+      .trim()
+      .toLowerCase()
+    // recode external: allow auto mode on OpenAI-compatible GPT-5 routes
+    // (OpenAI provider or CPA host). We already route classifier/tool calls
+    // through the same adapter stack, so keep the allowlist tight to the GPT-5
+    // family instead of opening every custom model by default.
+    if (
+      process.env.USER_TYPE !== 'ant' &&
+      (getAPIProvider() === 'openai' || isCpaBaseUrl()) &&
+      /^gpt-5(?:[.-]|$)/.test(normalizedModel)
+    ) {
+      return true
+    }
     // External: firstParty-only at launch (PI probes not wired for
     // Bedrock/Vertex/Foundry yet). Checked before allowModels so the GB
     // override can't enable auto mode on unsupported providers.
