@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose a focused improvement
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What observable behavior would make this feature complete?
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Preferred scope
+      options:
+        - Minimal CLI workflow
+        - Complete user workflow
+        - Research only
+    validations:
+      required: true

@@ -1,0 +1,268 @@
+---
+title: "声明式多 Agent 工作流"
+description: "Recode 如何用有界 DAG、结构化输出和持久化编排并行 Agent"
+---
+
+# 声明式多 Agent 工作流
+
+普通 `Agent` Tool 适合把一个独立问题交给单个子 Agent；持续 Goal 解决顶层
+回合结束后是否继续；Workflow 则解决多个子任务之间的并行、依赖和失败传播。
+它们复用同一套 Provider、模型路由、工具权限和 Task UI，但生命周期彼此独立。
+
+## 用户入口
+
+```text
+/orchestrate 审查认证模块，并在验证结论后修复问题
+/workflows
+/workflows templates
+/workflows run target-review src/auth
+/workflows <run-id>
+/workflows stop <run-id>
+/workflows resume <run-id>
+/workflows concurrency <run-id> <1-6>
+/workflows budget <run-id> <tokens|none>
+```
+
+`/orchestrate` 让主 Agent 为明确目标构造一个 Workflow DAG。启动后命令立即
+返回，worker 在后台运行；`/tasks` 展示实时监控面板，`/workflows` 读取持久化
+journal。任务详情提供 `Overview` 和 `Phases` 两个视图：前者汇总活跃 worker、
+失败、usage、成本与保留 worktree，后者按规格中的 phase 稳定分组 step。未声明
+phase 的 step 进入 `Unphased`，不会从面板消失。按 `Tab` 切换视图；在 phase
+视图中选择运行中的步骤后可按 `s` 跳过、按 `r` 重试，或在任一视图按 `x` 停止
+整个 run。
+
+模型也可以直接调用 `Workflow` Tool 的 `launch`、`status`、`configure`、
+`cancel` 和 `resume` action。`launch` 必须在内联 `spec` 与 `template_name` 中二选一。
+只有用户明确要求编排或调整资源限制时，才应执行对应操作。
+
+## DAG 规格
+
+每个 run 使用版本化的声明式规格，而不是执行任意 JavaScript：
+
+```json
+{
+  "version": 1,
+  "name": "review-and-apply",
+  "objective": "并行审查实现与测试，再应用已验证的修改",
+  "maxConcurrency": 3,
+  "tokenBudget": 120000,
+  "steps": [
+    {
+      "id": "correctness",
+      "title": "审查正确性",
+      "prompt": "检查状态转换、错误处理和边界条件",
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["findings"],
+        "properties": {
+          "findings": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    {
+      "id": "tests",
+      "title": "审查测试",
+      "prompt": "定位缺失的回归测试"
+    },
+    {
+      "id": "apply",
+      "title": "实施并验证",
+      "prompt": "根据两个审查结果实施修改并运行验证",
+      "mode": "write",
+      "isolation": "worktree",
+      "dependsOn": ["correctness", "tests"]
+    }
+  ]
+}
+```
+
+校验器限制最多 24 个步骤、默认并发 3、最大并发 6。`tokenBudget` 可省略或设为
+`null`，显式预算范围为 1 到 100,000,000。步骤 ID 必须唯一，所有依赖必须存在，
+循环依赖会在启动前被拒绝。单个步骤最多自动尝试 3 次，超时范围为 10 秒到 1 小时。
+
+## 项目模板
+
+可复用模板放在稳定项目根目录的 `.recode/workflows/*.json` 或 `*.jsonc`。模板是
+数据 envelope，不是可执行脚本：
+
+```jsonc
+{
+  "templateVersion": 1,
+  "name": "target-review",
+  "description": "并行审查一个明确目标",
+  "argumentHint": "<path-or-scope>",
+  "spec": {
+    "version": 1,
+    "name": "target-review",
+    "objective": "审查 $ARGUMENTS 并报告可复核证据",
+    "maxConcurrency": 2,
+    "steps": [
+      {
+        "id": "correctness",
+        "title": "正确性审查",
+        "prompt": "检查 $ARGUMENTS 的状态转换和错误边界"
+      },
+      {
+        "id": "tests",
+        "title": "测试审查",
+        "prompt": "检查 $ARGUMENTS 的回归测试缺口"
+      }
+    ]
+  }
+}
+```
+
+文件名、envelope `name` 和 `spec.name` 必须相同，并使用小写字母、数字、连字符或
+下划线。单项目最多检查 64 个模板，单文件最大 256 KiB；符号链接、重复的
+`.json`/`.jsonc` 名称、未知字段、无效 DAG 和不安全写步骤都会被拒绝。
+`/workflows templates` 同时列出有效模板和逐文件诊断。
+
+`$ARGUMENTS` 只会在 `objective` 与 step `prompt` 字段中按纯文本替换，不参与 JSON
+字符串拼接或代码执行。使用该占位符时必须声明 `argumentHint` 并在启动时提供参数；
+没有占位符的模板会拒绝多余参数。展开后的完整 spec 会再次校验并写入 run journal，
+因此 resume 不依赖原模板继续存在。
+
+没有命令名冲突的模板会在启动时注册为带 `workflow` 标记的 `/<name>` 快捷命令，
+且不会被模型自主调用。若与内置命令、skill、plugin 或别名冲突，现有命令优先，
+模板仍可通过 `/workflows run <name>` 启动。`templates` 和 `run` 每次读取磁盘；新增
+文件若要出现在 slash typeahead 中，需要重启 Recode。
+
+## 调度语义
+
+调度器不是按批次等待的 barrier。每当一个步骤完成，它的直接依赖如果已经
+全部满足，就可以立即占用空闲并发槽；无关的慢步骤不会阻塞这条依赖链。
+
+步骤失败后只跳过依赖它的分支，独立分支仍会完成。run 最终会明确进入
+`completed`、`failed`、`budget_limited` 或 `cancelled`，不会把部分成功报告为
+整体成功。自动重试受 `maxAttempts` 限制；用户主动 retry 不消耗自动重试额度。
+
+## 资源预算与运行时调整
+
+run 的 token 预算是累计消耗的**准入边界**。系统从已完成的 Provider 响应读取
+input、output、cache read 和 cache creation token，并按响应 ID 去重拆分消息。
+自动重试、用户 retry、失败尝试以及能够取得 usage 的取消或归并失败都会计入累计值。
+
+调度器只在一次响应结束、usage 可确认后决定是否启动新步骤。因此达到预算时：
+
+- 不再启动 pending 步骤，run 进入可恢复的 `budget_limited`。
+- 已经运行的 worker 会正常收尾，不会为了制造表面上的精确上限而中断写操作。
+- 并发 worker 可能让最终消耗超过预算；超出量取决于到达边界时已在运行的请求。
+- 如果所有步骤恰好在越过预算时完成，run 仍报告 `completed`。
+
+`/workflows budget` 可以扩大、移除或降低预算；`/workflows concurrency` 可以在
+1 到 6 之间调整当前 run 的并发。提高并发会立即唤醒调度器，降低并发不会取消
+已经运行的 worker，只限制后续准入。两类修改都以 `run_configured` 事件持久化，
+`budget_limited` run 调整后可用 `resume` 继续，已完成步骤不会重跑。
+
+成本由同一组 usage 在本地估算。只有价格表中明确识别的模型才累计美元估值；
+自定义或未知模型不会套用其他模型的默认价格。Provider 没有返回完整 usage 时，
+系统不会用文本长度伪造精确 token，这部分也会让成本显示为 `incomplete`，且无法
+纳入预算判断。
+
+## 结构化步骤输出
+
+步骤可以声明可选的 `outputSchema`。它必须是 object-root JSON Schema；启动时会
+进行严格编译，并限制为 20,000 字符、16 层和 512 个 JSON 节点。远程 `$ref`
+会被拒绝，只允许当前 schema 内的 JSON Pointer，避免执行期间访问外部 schema。
+
+结构化步骤会获得一个仅属于该 worker 的 `StructuredOutput` Tool。worker 必须
+恰好调用一次；agent Stop hook 会阻止遗漏，引擎仍会在工具返回后使用本地 Ajv
+进行第二次校验。缺失、重复或不符合 schema 的输出会让该次尝试失败，并消耗普通
+`maxAttempts`，不会以未验证文本完成步骤。
+
+通过校验后，step 同时保存紧凑 JSON 文本和对象值。下游步骤仍可使用兼容的文本
+依赖，同时会收到标记为 `structured-json` 的 typed result。恢复时，已完成的结构化
+步骤会从 journal 重新校验后复用；无效结果不会进入执行上下文。
+
+## 读写和权限边界
+
+- `read` 步骤只能获得文件读取、搜索、LSP、Web 读取和 MCP Resource 读取工具。
+- 普通 `write` 步骤可以使用写入与 Shell 工具，但必须和 DAG 中每个其他步骤
+  存在依赖顺序；若工作流并发为 1，则由串行调度提供同一保证。
+- `write` 步骤可以声明 `isolation: "worktree"`。彼此无依赖的隔离写步骤可以
+  并行，但仍必须与 read 和普通 write 步骤存在依赖顺序。
+- worker 不能再次调用内置 `Agent`、`Workflow`、`Goal`、Team 或
+  `SendMessage`，避免无界递归编排。
+- 自定义 Agent 的 system prompt 和工具筛选可以复用，但其生命周期 hooks、
+  Agent 专属 MCP Server 和权限模式覆盖不会进入 Workflow worker。
+- 每个底层工具仍经过当前会话的 `canUseTool` 权限链。后台 worker 不弹出权限
+  对话框；没有预先批准的操作会失败，而不是静默放行。
+
+文本和结构化步骤输出最多保留 100,000 字符；传给单个下游步骤的依赖输出也有
+单项和总量上限，防止 journal 与上下文无限增长。
+
+## Journal 与恢复
+
+每个 run 写入：
+
+```text
+.recode/workflow-runs/<run-id>.jsonl
+```
+
+该目录是本地运行状态，默认不进入 Git。journal 以事件记录 run 和 step 状态，
+写入按 run 串行化。读取时会忽略损坏的末尾行、校验 run ID 和步骤结构，并把
+旧 journal 的工作目录重新绑定到当前项目，因此移动仓库后仍能恢复，也不能由
+journal 指向另一个目录。
+
+当前 journal schema 为 v4。读取器会把 v1、v2 和 v3 journal 迁移为 v4 内存状态；
+旧记录缺少价格明细时会保留 token 总数并标记成本不完整。新事件继续追加到原文件，
+因此现有 run 不需要手工转换。
+
+`resume` 保留已经完成的步骤及其输出，只重置失败、取消、跳过或中断的步骤。
+即使进程崩溃时最后状态仍是 `running`，新进程只要不存在对应的活动控制器就能
+恢复；同一进程中的活动 run 会拒绝重复恢复。
+
+隔离步骤会在合并前把 input tree、output tree 和已校验执行结果一起 checkpoint。
+输入和输出 tree 由内部 Git ref 引用的无分支 commit 保活，因此 worktree 被清理并
+执行 Git GC 后仍可判定补丁是否已经落地。如果进程在 apply、清理或最终 step
+事件之间退出，resume 会恢复已确认的结果而不再次调用 Agent；无法证明已合并的
+修改会保留供检查，不会猜测性覆盖主目录。
+
+## Worktree 隔离与归并
+
+隔离写步骤要求当前项目位于 Git 仓库中。worker 从启动时的精确工作目录快照
+开始，包括 staged、unstaged、非 ignored untracked 文件和二进制文件；快照使用
+临时 `GIT_INDEX_FILE`，不会改动用户真实 index。`.claude/worktrees` 和
+`.recode/workflow-runs` 运行目录不会进入快照。
+
+每个 worker 使用 exact-HEAD 的临时分支和 `.claude/worktrees/<slug>` 目录。
+完成后系统生成最大 20 MB 的 binary patch，并在 run 内串行归并：
+
+- 主目录与预期快照一致且补丁无冲突时，应用变更并删除临时 worktree、分支和 ref。
+- 两个并行 worker 修改不相交内容时，后完成者基于前一个归并后的预期 tree 继续。
+- 补丁冲突、worker 身份变化或用户/其他进程同时修改主目录时，归并失败关闭；
+  主目录不做部分写入，含修改的 worktree 路径会出现在 `/workflows <run-id>`。
+- clean 的中断 worktree 会在 resume 时清理；有未确认修改的 worktree 会保留。
+
+## 执行约束
+
+- read 和未声明 isolation 的 write worker 仍共享当前项目目录。只有显式设置
+  `isolation: "worktree"` 的 write 步骤使用 Git 快照；非 Git 项目会明确拒绝该模式。
+- stop 只控制当前进程中的活动 run。进程退出后应使用 resume，而不是 stop。
+- token budget 不是传输中的硬截断，也不提供美元预算；它在完整响应之间控制新步骤
+  准入，成本字段只是基于已知本地价格的估算。
+- journal 保存执行结果，不保存 Provider 密钥；模型和认证仍来自恢复时的当前
+  Recode 配置。
+
+## 实现位置
+
+| 模块 | 职责 |
+| --- | --- |
+| `src/services/workflow/validation.ts` | 规格归一化、DAG 和写步骤安全校验 |
+| `src/services/workflow/engine.ts` | 非 barrier 调度、重试、失败传播和取消 |
+| `src/services/workflow/structuredOutput.ts` | schema 限制、编译和执行结果二次校验 |
+| `src/services/workflow/storage.ts` | 事件 journal、回放和损坏尾行恢复 |
+| `src/services/workflow/agentRunner.ts` | 复用 `runAgent`、模型和权限边界 |
+| `src/services/workflow/service.ts` | Task、通知、控制器和恢复生命周期 |
+| `src/services/workflow/usage.ts` | 响应去重、usage 累计和已知模型成本估算 |
+| `src/services/workflow/runtime.ts` | 动态并发调整的调度唤醒信号 |
+| `src/services/workflow/worktree.ts` | 脏目录快照、隔离执行、补丁归并和崩溃恢复 |
+| `src/services/workflow/templates.ts` | 项目模板发现、诊断、参数展开和二次校验 |
+| `src/commands/workflows/templateCommands.ts` | 无冲突模板的 slash 快捷命令注册 |
+| `src/components/tasks/workflowMonitor.ts` | 从 Task 实时状态派生 phase、worker、failure 和 worktree 摘要 |
+| `src/components/tasks/WorkflowDetailDialog.tsx` | `/tasks` 的 Overview/Phases 监控、窗口化和运行控制 |
+| `src/tools/WorkflowTool/` | 模型工具 schema 与终端渲染 |

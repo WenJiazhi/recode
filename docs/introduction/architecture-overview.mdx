@@ -1,0 +1,76 @@
+---
+title: "架构全景"
+description: "五层架构，一条数据流"
+---
+
+## 五层架构
+
+Recode 从上到下分为五个层次，每一层有明确职责：
+
+| 层次 | 职责 | 关键词 |
+|------|------|--------|
+| **交互层** | 终端 UI、用户输入、消息展示 | React/Ink、REPL |
+| **编排层** | 管理多轮对话、会话生命周期、成本追踪 | QueryEngine、会话持久化 |
+| **核心循环层** | 单轮对话：发请求 → 拿响应 → 执行工具 → 再发请求 | Agentic Loop |
+| **工具层** | AI 的"双手"——读写文件、执行命令、搜索代码 | Tool System、MCP |
+| **通信层** | 与模型 API 的流式通信、多 Provider 适配 | Anthropic、OpenAI、Bedrock、Vertex |
+
+## 一条主数据流
+
+整个系统的运转可以浓缩为一条核心数据流：
+
+<Steps>
+  <Step title="用户输入">
+    用户在终端键入自然语言需求
+  </Step>
+  <Step title="上下文组装">
+    系统自动拼接项目信息、git 状态、配置文件、记忆，形成完整的 System Prompt
+  </Step>
+  <Step title="API 调用">
+    将 System Prompt 和对话历史发送给所选 Provider，流式接收响应
+  </Step>
+  <Step title="工具调用循环">
+    若 AI 返回工具调用请求 → 权限检查 → 执行工具 → 结果回传 → AI 继续思考 → 循环
+  </Step>
+  <Step title="任务完成">
+    AI 不再调用工具，输出最终回答，等待用户下一条输入
+  </Step>
+</Steps>
+
+## 从单回合到持续 Goal
+
+`src/query.ts` 的循环解决“一个顶层回合内如何思考、调工具并结束”。
+Goal 服务则解决“顶层回合结束后是否应继续”：它使用 QueryGuard 判断空闲状态，
+使用低优先级消息队列把下一轮交回普通输入管线，并使用会话 JSONL
+保存目标、预算、里程碑和停止原因。
+
+这个边界让单轮工具循环保持不变，同时为跨回合任务增加用户优先、可中断、
+可恢复和有上限的持续执行。详见[持续 Goal](../conversation/persistent-goals.mdx)。
+
+## 从单 Agent 到声明式编排
+
+`Agent` Tool 负责执行一个隔离子任务，Workflow 服务则在它之上增加有界 DAG：
+校验器保证依赖无环和写步骤顺序，调度器在依赖满足时立即占用并发槽，Task 层
+展示运行状态，事件 journal 提供进程退出后的恢复。worker 继续复用普通
+`runAgent` 的 Provider、模型和权限，而不是建立第二套执行循环。
+
+Workflow 与 Goal 可以组合但不会递归：Goal 管理多个顶层回合是否继续，
+Workflow 管理单个后台 run 内多个 worker 的依赖。完整边界见
+[声明式多 Agent 工作流](../agent/workflow-orchestration.mdx)。
+
+## 四个核心设计原则
+
+<AccordionGroup>
+  <Accordion title="流式优先 (Streaming-first)">
+    受支持的模型请求路径采用流式响应，工具执行结果也会逐步反馈。这降低了长时间任务的等待感，并为中断和进度展示提供基础。
+  </Accordion>
+  <Accordion title="工具即能力 (Tool as Capability)">
+    AI 的每一项"动手能力"都被抽象为一个 Tool。想让 AI 能做新事情？注册一个新 Tool 就好。统一的接口让能力可插拔、可组合。
+  </Accordion>
+  <Accordion title="权限即边界 (Permission as Boundary)">
+    AI 能操作真实环境是强大的，也是危险的。每个工具调用都经过权限系统的裁决——该放行的自动放行，该拦截的坚决拦截。
+  </Accordion>
+  <Accordion title="上下文即记忆 (Context as Memory)">
+    AI 没有真正的记忆，但通过精心的 System Prompt 组装、对话压缩、持久化记忆文件，系统营造出"AI 理解你的项目"的效果。这是上下文工程的核心。
+  </Accordion>
+</AccordionGroup>

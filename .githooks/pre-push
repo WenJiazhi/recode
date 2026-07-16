@@ -1,0 +1,6 @@
+#!/bin/sh
+
+set -eu
+
+echo "Running release-grade health checks before push..."
+bun run health

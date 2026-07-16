@@ -1,0 +1,78 @@
+---
+title: "Provider 离线端到端验证"
+description: "使用本地 HTTP/SSE 服务验证请求、工具闭环、错误和发布产物"
+---
+
+# Provider 离线端到端验证
+
+`bun run test:provider-e2e` 启动只监听 `127.0.0.1` 的临时 Provider，随后以
+真实 `-p` CLI 进程执行 Anthropic Messages 和 OpenAI-compatible Chat
+Completions 路径。它验证的是从 CLI 启动、Provider 路由、SSE 解析到工具执行
+和第二轮请求的完整边界，不以 mock 函数替代网络层。
+
+## 验证矩阵
+
+| 维度 | 覆盖 |
+| --- | --- |
+| 运行时 | `src/entrypoints/cli.tsx`、`dist/cli.js`、可选的已安装 binary |
+| Provider | Anthropic-compatible、OpenAI-compatible |
+| 正常流 | 流式工具调用、`Read` 执行、`tool_result` 回传、最终文本 |
+| Usage | 首轮正常 token usage，第二轮完全缺失 usage |
+| 路由 | `sonnet` 语义模型映射到 Provider 的实际模型 ID |
+| 错误 | HTTP 400 和 HTTP 200 内的 SSE `error` |
+
+正常场景固定执行两次模型请求。第一次由 mock 发出 `Read`，CLI 读取临时文件；
+第二次请求必须包含对应 call ID 和文件中的 sentinel，mock 才返回最终文本。
+因此仅仅能连接 endpoint 或通过适配器单元测试不能让该场景通过。
+
+## 隔离边界
+
+Harness 不读取或请求真实 API Key：
+
+- 每个场景使用独立的临时 `HOME`、配置目录和工作目录。
+- 启动子进程前移除 Anthropic、OpenAI、Recode Provider、云凭据和代理变量。
+- 只注入固定的测试密钥和 loopback Base URL。
+- 启用 bare mode、关闭非必要网络流量、遥测和会话持久化。
+- 测试结束后关闭 server 并删除全部临时文件。
+
+未知路径、错误认证、错误模型、非流式请求、缺失工具 schema 和缺失
+`tool_result` 都会让测试失败。Mock 允许的额外请求只有连接预热 `HEAD /` 和
+可选模型发现 `GET /v1/models`。
+
+## 运行方式
+
+源码和 bundle 是健康检查中的固定门禁：
+
+```bash
+bun run build
+bun run test:provider-e2e
+```
+
+验证安装后的 standalone binary：
+
+```bash
+bun run scripts/provider-e2e.ts \
+  --runtimes binary \
+  --binary "$HOME/.local/bin/recode"
+```
+
+也可以一次验证三种运行时：
+
+```bash
+bun run scripts/provider-e2e.ts \
+  --runtimes source,bundle,binary \
+  --binary "$HOME/.local/bin/recode"
+```
+
+Binary 在临时安装目录中重新 staging 后执行，避免误把仓库路径或可执行位缺失
+问题当作已安装验证通过。
+
+普通 CI 在 build 后执行 source 和 bundle 矩阵；GitHub Release 的每个平台
+build job 在打包前执行 binary 矩阵。两者都不需要仓库 Secret 或外部网络。
+
+## 已知边界
+
+离线 E2E 证明 Recode 生成和消费的两套协议形态、模型映射、工具闭环和构建产物
+一致。它不证明任意第三方网关都完整实现协议，也不替代使用者对真实 endpoint、
+模型权限、配额、TLS 和供应商特有字段的连通性检查。Bedrock、Vertex、Foundry
+使用各自 SDK 和凭据链，不在这个 HTTP mock 矩阵中。

@@ -1,0 +1,40 @@
+---
+title: "ACP stdio 接入"
+description: "使用标准 Agent Client Protocol 驱动 Recode 会话"
+---
+
+# ACP stdio 接入
+
+`recode --acp` 将标准输入和标准输出专用于 ACP JSON-RPC。该入口在 Provider
+初始化、Commander 和 TUI 之前接管进程，保证 stdout 不混入横幅或普通日志。
+
+## 已支持范围
+
+- `initialize` 与 capability negotiation
+- `session/new`、`session/load`、`session/prompt`、`session/cancel`
+- 文本、thinking、Tool start/update/result、Todo plan 和 usage update
+- `session/request_permission` 权限桥接，包括临时允许和规则持久化建议
+- stdio、HTTP 和 SSE MCP 配置转换
+- 现有 JSONL session 的历史回放与 `--resume` 恢复
+- `additionalDirectories` 文件系统范围
+
+每个 ACP session 对应一个长期运行的 Recode stream-json 子进程。子进程复用
+现有 Provider、QueryEngine、Tool、权限和 session 持久化；ACP 层只负责协议转换、
+生命周期与错误边界，因此 TUI 和 ACP 不会形成两套 Agent loop。
+
+## 内容边界
+
+首版接受 text、resource link 和 embedded text resource。Image、audio 和 binary
+resource 尚未进入 Agent 输入契约；收到这些内容时会转成可读提示并在 stderr
+报告降级类型。ACP-transport MCP message tunneling、WebSocket、relay 和 remote
+daemon 不属于首版。
+
+## 验证
+
+```bash
+bun run test:acp-e2e
+```
+
+测试使用正式 ACP TypeScript SDK 启动真实 client 和 Recode 子进程，再连接隔离的
+本地 Anthropic-compatible SSE Provider。门禁覆盖新建会话、流式工具闭环、跨工作
+目录权限、断开后的 `session/load`、历史回放和正在请求中的取消；不读取真实密钥。

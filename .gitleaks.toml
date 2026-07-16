@@ -1,0 +1,13 @@
+title = "Recode secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Generated bundle is ignored by Git and scanned through source"
+paths = ['''^dist/''']
+
+[[allowlists]]
+description = "Claude subscription tier identifier is not a credential"
+regexTarget = "match"
+regexes = ['''tokens\.rateLimitTier\s*===\s*['"]default_claude_max_20x['"]''']

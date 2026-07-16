@@ -1,0 +1,100 @@
+---
+title: "Git 与发布流程"
+description: "Recode 的本地分支、提交、验证、版本和远端发布规则"
+---
+
+# Git 与发布流程
+
+Recode 采用本地优先、发布时同步远端的流程。日常开发可以频繁提交，但只有经过
+确认的大版本才推送到 GitHub。
+
+## 分支
+
+- `main`：只表示最近一个批准的发布版本。
+- `chore/<name>`：仓库、构建和基础设施工作。
+- `feat/<id>-<name>`：已批准功能，名称包含 backlog ID。
+- `fix/<name>`：缺陷修复。
+- `docs/<name>`：纯文档调整。
+
+当前发布基础工作在 `chore/release-foundation` 本地分支完成。
+
+## 功能准入
+
+1. 在 issue 或设计文档中登记问题、范围和验收标准。
+2. 用户把状态从 **Proposed** 确认为 **Approved**。
+3. 创建独立 `feat/<id>-<name>` 分支。
+4. 先补失败测试或可重复验证，再实现最小范围。
+5. 更新 README、roadmap 或配置文档。
+6. 运行完整健康检查并审阅 diff。
+
+未批准的候选不能因为参考项目已有实现就直接加入 Recode。
+
+## 提交
+
+提交使用 Conventional Commits 风格：
+
+```text
+feat(provider): add named provider profiles
+fix(worktree): preserve ignored include files
+docs: document conditional computer-use support
+test(openai): cover streaming tool calls
+chore(ci): add built CLI smoke test
+```
+
+每个提交只表达一个可审阅目的。不要把格式化、功能、文档删除和依赖升级混在
+同一个提交中。
+
+## 本地验证
+
+开发中使用针对性检查，提交前至少运行：
+
+```bash
+bun run lint
+bun run typecheck
+bun run check:docs
+bun run test
+bun run build
+bun run test:smoke
+bun run test:provider-e2e
+```
+
+发布候选运行：
+
+```bash
+bun install --frozen-lockfile
+bun run health
+gitleaks dir . --no-banner --redact
+```
+
+`bun run check:unused` 会验证高信号静态问题是否与 capability registry 精确一致；
+新增问题和过期例外都会失败。`bun run audit:unused` 输出完整 Knip 报告，用于人工
+分析公共导出和动态入口，不是自动删除清单。
+
+## 版本
+
+- `0.x`：练习和作品集阶段，允许有明确记录的实验性边界。
+- Minor 版本：一组用户可见能力，例如 `0.1.0`、`0.2.0`。
+- Patch 版本：不扩大产品面的修复。
+- `1.0.0`：安装、Provider、核心 Agent、文档和升级策略达到稳定承诺。
+
+每次发布更新 `CHANGELOG.md`，创建带注释 tag，并记录验证结果。
+
+## 远端策略
+
+- 默认不 push 日常本地提交。
+- 只有用户明确批准发布版本后才配置远端同步内容。
+- 不直接向远端 `main` 追加当前旧历史。
+- 首个公开大版本从审核后的工作树创建全新根提交，确保旧 token、施工文档和
+  清理前对象不进入新的 GitHub 历史。
+- 清理前历史先保存为仓库外的 Git bundle；ZIP 原始材料继续保持只读归档。
+
+替换远端历史属于发布操作，必须单独确认，不能由普通开发任务触发。
+
+## 发布前审阅
+
+- 产品文档与真实行为一致。
+- 不包含 API Key、内部域名、讨论链接或本机绝对路径。
+- CI、健康检查、构建产物 smoke 全绿。
+- 新配置有 schema、错误信息、迁移或兼容策略。
+- 安全敏感改动有针对性测试。
+- README 只宣传已经支持的能力。

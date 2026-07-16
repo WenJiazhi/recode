@@ -1,0 +1,90 @@
+---
+title: "快速开始"
+description: "安装、配置 Provider 并运行第一次请求"
+---
+
+## 环境要求
+
+- 所选模型 Provider 的凭据
+- Git（使用仓库相关工作流时需要）
+
+从源码构建还需要 Bun `1.3.14` 或更高版本。
+
+## 安装
+
+安装最新的 macOS 或 Linux standalone：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/WenJiazhi/recode/main/install.sh | sh
+recode --version
+```
+
+安装脚本会验证 GitHub Release 中的 SHA-256 checksum，并安装 Recode 及其
+搜索运行时。可以设置
+`RECODE_VERSION=v0.0.1` 固定版本，或用 `RECODE_INSTALL_DIR` 修改安装目录。
+
+从源码安装：
+
+```bash
+git clone https://github.com/WenJiazhi/recode.git
+cd recode
+bun install --frozen-lockfile
+```
+
+## 配置 Provider
+
+Anthropic、Bedrock、Vertex 和 Foundry 可以使用各 SDK 的标准环境变量。
+OpenAI 兼容接口和 CPA 可以使用项目级配置：
+
+```json
+{
+  "enabled": true,
+  "providerType": "openai",
+  "baseURL": "https://api.example.com",
+  "apiKeyFile": "./api-key.txt",
+  "settings": {
+    "model": "your-model"
+  }
+}
+```
+
+配置路径是 `.recode/local-provider.json`，密钥文件路径相对于该配置文件。
+配置和密钥文件默认不会提交到 Git。
+
+交互模式中运行 `/provider` 可以使用左右键选择配置来源：
+
+- `.claude` 跟随 `~/.claude/settings.json` 的外部配置。
+- `.recode` 默认从只读的 `~/.cc-switch/cc-switch.db` 中选择独立 Provider，并在
+  当前会话热切换。兼容数据库位于其他位置时可设置
+  `RECODE_PROVIDER_CATALOG_DB`。
+
+选择 `.recode` Provider 后会继续进入模型与 effort 选择。Provider 目录中的密钥
+只在当前进程中使用，不会复制到 `.recode` 配置或终端输出。项目没有本地配置时，
+来源和 Provider ID 保存到 `~/.recode/local-provider.json`。
+没有安装 CC Switch 或数据库不可读时，`.claude` 仍可正常使用，`.recode` 页会
+显示具体错误且不会修改当前配置。
+
+`providerType` 可选值为 `anthropic`、`cpa` 或 `openai`。`baseURL` 必须是
+HTTP(S) 绝对地址，且不能包含用户名或密码。配置格式错误时 CLI 会在启动时
+指出具体文件和字段，不会静默切换到其他 Provider。
+
+## 运行
+
+启动交互式终端：
+
+```bash
+bun run dev
+```
+
+执行一次非交互请求：
+
+```bash
+bun run dev -p "总结这个仓库"
+```
+
+验证构建产物：
+
+```bash
+bun run build
+bun run start --help
+```

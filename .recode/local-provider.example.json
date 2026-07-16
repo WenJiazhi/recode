@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "providerType": "openai",
+  "baseURL": "https://api.example.com/v1",
+  "apiKeyFile": "./api-key.txt",
+  "settings": {
+    "model": "example-coding-model",
+    "effortLevel": "high",
+    "customModelAliasMappings": {
+      "opus": {
+        "model": "example-coding-model",
+        "thinking": "high"
+      },
+      "sonnet": {
+        "model": "example-coding-model",
+        "thinking": "medium"
+      },
+      "haiku": {
+        "model": "example-fast-model",
+        "thinking": "minimal"
+      }
+    }
+  }
+}

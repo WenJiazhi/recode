@@ -1,0 +1,100 @@
+---
+title: "持续 Goal：跨回合执行"
+description: "Goal 如何在现有 Agentic Loop 之上提供可控、可恢复的持续执行"
+---
+
+# 持续 Goal
+
+普通 Agentic Loop 会在一个用户回合内反复请求模型和执行工具，模型返回
+最终文本后就停止。Goal 不替换这个循环，而是在顶层回合之间增加一层
+持续状态：当一轮结束后，它检查用户是否仍希望继续，再决定是否排入
+下一轮。
+
+## 命令面
+
+| 命令 | 作用 |
+| --- | --- |
+| `/goal <objective>` | 创建 Goal；已有未完成 Goal 时要求确认替换 |
+| `/goal --budget 80k <objective>` | 创建带 token 预算的 Goal，支持 `k` 和 `m` |
+| `/goal` 或 `/goal status` | 显示目标、状态、active time、token、续跑次数和最新 checkpoint |
+| `/goal checkpoint <summary>` | 手动保存一个里程碑 |
+| `/goal pause` | 暂停自动续跑 |
+| `/goal resume` | 恢复 paused、blocked 或 usage-limited Goal |
+| `/goal budget <tokens\|none>` | 调整或移除预算；扩展已耗尽预算时会恢复 |
+| `/goal continue` | 在达到自动续跑上限后重置计数器 |
+| `/goal complete` | 由用户手动标记完成 |
+| `/goal clear` | 写入清除 tombstone 并移除当前 Goal |
+
+## 续跑条件
+
+Goal 续跑使用现有消息队列的 `later` 优先级。每次排队前会同时检查：
+
+- QueryGuard 已经空闲，没有 dispatching 或 running query。
+- 用户队列为空；`now` 和 `next` 级别的输入总是先执行。
+- 没有 local JSX 对话框、权限请求或其他阻塞 UI。
+- 当前不在 plan mode。Goal 不会绕过计划审批边界。
+- 上一轮没有被用户中断。
+- Goal 仍为 active，未达 token 预算和 100 次自动续跑上限。
+
+因此 Goal 不是一个脱离 REPL 的无限 while-loop。它每轮都经过同一套输入、
+权限、工具和错误处理路径，并且始终让用户拥有更高调度优先级。
+
+## 状态机
+
+```text
+active
+  |-- /goal pause 或用户中断 ------> paused
+  |-- provider usage limit ----------> usage_limited
+  |-- token budget ------------------> budget_limited
+  |-- 100 continuations -------------> max_turns
+  |-- 3 consecutive blocked reports -> blocked
+  `-- verified completion -----------> complete
+
+paused / usage_limited / blocked -- /goal resume --> active
+budget_limited -- /goal budget <larger|none> ------> active
+max_turns -- /goal continue ----------------------> active
+any state -- /goal clear -------------------------> removed
+```
+
+`blocked` 不是模型一次说“做不了”就能进入的状态。同一原因必须出现在
+三个连续且不同的 Goal 回合中。同一回合重复调用不会累加；中间回合
+没有再报告阻塞，或者写入了新 checkpoint，连续计数就会清零。
+
+## 模型工具
+
+会话存在尚未清除的 Goal 时，工具池会动态加入 `Goal` Tool。它只暴露四类操作：
+
+- 读取当前目标、状态、token、active time 和最新 checkpoint。
+- 在有意义的里程碑后写入 checkpoint。
+- 经过完整验收审计后报告 complete。
+- 在三回合规则下报告 blocked。
+
+只读操作允许并发，修改状态的操作串行执行。用户才能暂停、恢复、替换、
+修改预算或清除 Goal。
+
+## 持久化与恢复
+
+状态以 `goal` 元数据条目追加到当前会话 JSONL；清除操作写入
+`goal-cleared` tombstone。加载时使用 last-write-wins，所以压缩重写、异常退出和
+多次修改都不需要额外数据库。
+
+`/resume`、`--resume`、`--continue` 和 fork 路径在切换 session ID 后再水合 Goal，
+避免跨会话泄漏状态。水合会验证 schema、长度、数值和状态不变式。处于
+active 的 Goal 只累加到最后一次持久化为止的活跃时间，CLI 关闭期间不计入
+active elapsed time。
+
+## 失败边界
+
+- Escape 或 Ctrl+C 中断活跃回合时，Goal 立即暂停并持久化。
+- rate limit 和 billing limit 进入 `usage_limited`；其他最终 API 错误进入
+  `paused`。
+- token 计量直接复用会话 cost tracker 中已规范化的 input、output、cache read
+  和 cache creation usage。
+- 达到预算后只允许一个收尾摘要回合，之后必须由用户扩展预算或清除。
+- 预算结束的最后响应如果已经提供完整验收证据，仍可以原子提交 complete
+  和最终 checkpoint。
+
+<Note>
+Goal 是交互式 REPL 能力，不在 `-p` 非交互命令面中暴露。它不依赖账号
+登录，对所有已配置的 API-key Provider 使用同一套生命周期。
+</Note>
